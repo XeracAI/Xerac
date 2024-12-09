@@ -41,7 +41,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               </span>
             </Link>
 
-            <BetterTooltip content="New Chat" align="start">
+            <BetterTooltip content="چت جدید" align="start">
               <Button
                 variant="ghost"
                 type="button"

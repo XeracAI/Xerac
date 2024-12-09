@@ -20,6 +20,7 @@ interface MessagesProps {
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
+  selectedModelId: string;
 }
 
 function PureMessages({
@@ -32,16 +33,16 @@ function PureMessages({
   setMessages,
   reload,
   isReadonly,
+  selectedModelId,
 }: MessagesProps) {
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
+  const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
 
   return (
     <div
       ref={messagesContainerRef}
       className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
     >
-      {messages.length === 0 && <Overview />}
+      {messages.length === 0 && <Overview selectedModelId={selectedModelId} />}
 
       {messages.map((message, index) => (
         <PreviewMessage
@@ -75,14 +76,7 @@ function PureMessages({
 }
 
 function areEqual(prevProps: MessagesProps, nextProps: MessagesProps) {
-  if (
-    prevProps.block.status === 'streaming' &&
-    nextProps.block.status === 'streaming'
-  ) {
-    return true;
-  }
-
-  return false;
+  return prevProps.block.status === 'streaming' && nextProps.block.status === 'streaming';
 }
 
 export const Messages = memo(PureMessages, areEqual);

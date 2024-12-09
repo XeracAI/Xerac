@@ -12,7 +12,7 @@ export function SidebarToggle({
   const { toggleSidebar } = useSidebar();
 
   return (
-    <BetterTooltip content="Toggle Sidebar" align="start">
+    <BetterTooltip content="باز/بسته کردن نوار راست" align="start">
       <Button
         onClick={toggleSidebar}
         variant="outline"

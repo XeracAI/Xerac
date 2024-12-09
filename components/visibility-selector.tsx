@@ -28,14 +28,14 @@ const visibilities: Array<{
 }> = [
   {
     id: 'private',
-    label: 'Private',
-    description: 'Only you can access this chat',
+    label: 'خصوصی',
+    description: 'فقط شما به این مکالمه دسترسی خواهید داشت',
     icon: <LockIcon />,
   },
   {
     id: 'public',
-    label: 'Public',
-    description: 'Anyone with the link can access this chat',
+    label: 'عمومی',
+    description: 'هر کسی با لینک می تواند این مکالمه را بخواند',
     icon: <GlobeIcon />,
   },
 ];
@@ -61,7 +61,7 @@ export function VisibilitySelector({
   );
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={setOpen} dir="rtl">
       <DropdownMenuTrigger
         asChild
         className={cn(
@@ -87,7 +87,7 @@ export function VisibilitySelector({
               setVisibilityType(visibility.id);
               setOpen(false);
             }}
-            className="gap-4 group/item flex flex-row justify-between items-center"
+            className="gap-4 group/item flex flex-row justify-between items-center cursor-pointer"
             data-active={visibility.id === visibilityType}
           >
             <div className="flex flex-col gap-1 items-start">

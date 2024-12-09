@@ -35,7 +35,7 @@ function PureChatHeader({
       <SidebarToggle />
 
       {(!open || windowWidth < 768) && (
-        <BetterTooltip content="New Chat">
+        <BetterTooltip content="چت جدید">
           <Button
             variant="outline"
             className="order-2 md:order-1 md:px-2 px-2 md:h-fit ml-auto md:ml-0"
@@ -45,7 +45,7 @@ function PureChatHeader({
             }}
           >
             <PlusIcon />
-            <span className="md:sr-only">New Chat</span>
+            <span className="md:sr-only">چت جدید</span>
           </Button>
         </BetterTooltip>
       )}
@@ -74,6 +74,4 @@ function PureChatHeader({
   );
 }
 
-export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId;
-});
+export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => prevProps.selectedModelId === nextProps.selectedModelId);
