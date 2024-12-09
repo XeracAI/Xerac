@@ -23,7 +23,7 @@ export default function Home() {
       {/*</div>*/}
 
       <Image
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 h-12 w-12 animate-bounce text-gray-400 z-50"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 size-12 animate-bounce text-gray-400 z-50"
         src={arrowDownIcon}
         alt="Arrow Down"
       />

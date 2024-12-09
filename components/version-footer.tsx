@@ -55,7 +55,7 @@ export const VersionFooter = ({
           onClick={async () => {
             setIsMutating(true);
 
-            mutate(
+            await mutate(
               `/api/document?id=${block.documentId}`,
               await fetch(`/api/document?id=${block.documentId}`, {
                 method: 'PATCH',

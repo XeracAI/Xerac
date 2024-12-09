@@ -8,15 +8,14 @@ import { useDebounceCallback, useWindowSize } from 'usehooks-ts';
 import type { Document, Suggestion, Vote } from '@/lib/db/schema';
 import { fetcher } from '@/lib/utils';
 
-import { DiffView } from './diffview';
-import { DocumentSkeleton } from './document-skeleton';
-import { Editor } from './editor';
 import { MultimodalInput } from './multimodal-input';
 import { Toolbar } from './toolbar';
 import { VersionFooter } from './version-footer';
 import { BlockActions } from './block-actions';
 import { BlockCloseButton } from './block-close-button';
 import { BlockMessages } from './block-messages';
+import { DocumentView } from "@/components/document-view";
+import { ImageView } from "@/components/image-view";
 
 export interface UIBlock {
   type: 'document' | 'image';

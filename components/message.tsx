@@ -15,11 +15,10 @@ import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
 import equal from 'fast-deep-equal';
-import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
-import { checkEnglishString } from "@/lib/utils";
+import { cn, checkEnglishString } from "@/lib/utils";
 
 const PurePreviewMessage = ({
   chatId,
@@ -227,8 +226,7 @@ export const PreviewMessage = memo(
     if (prevProps.isLoading !== nextProps.isLoading) return false;
     if (prevProps.isLoading && nextProps.isLoading) return false;
     if (prevProps.message.content && nextProps.message.content) return false;
-    if (!equal(prevProps.vote, nextProps.vote)) return false;
-    return true;
+    return equal(prevProps.vote, nextProps.vote);
   },
 );
 
