@@ -1,7 +1,8 @@
-import type {SetStateAction} from 'react'
+import { memo, type SetStateAction } from 'react';
 
-import type {UIBlock} from './block'
-import {FileIcon, LoaderIcon, MessageIcon, PencilEditIcon} from './icons'
+import type { UIBlock } from './block';
+import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from './icons';
+import { toast } from 'sonner';
 import {checkEnglishString} from '@/lib/utils'
 
 const getActionText = (type: 'create' | 'update' | 'request-suggestions', tense: 'present' | 'past') => {
@@ -18,19 +19,32 @@ const getActionText = (type: 'create' | 'update' | 'request-suggestions', tense:
 }
 
 interface DocumentToolResultProps {
-  type: 'create' | 'update' | 'request-suggestions'
-  result: {id: string; title: string}
-  block: UIBlock
-  setBlock: (value: SetStateAction<UIBlock>) => void
+  type: 'create' | 'update' | 'request-suggestions';
+  result: { id: string; title: string };
+  block: UIBlock;
+  setBlock: (value: SetStateAction<UIBlock>) => void;
+  isReadonly: boolean;
 }
 
-export function DocumentToolResult({type, result, setBlock}: DocumentToolResultProps) {
+function PureDocumentToolResult({
+  type,
+  result,
+  setBlock,
+  isReadonly,
+}: DocumentToolResultProps) {
   return (
     <button
       type="button"
       className="bg-background cursor-pointer border border-primary pb-2 pt-3 px-3 rounded-xl w-fit flex flex-row gap-3 items-start"
       onClick={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect()
+        if (isReadonly) {
+          toast.error(
+            'Viewing files in shared chats is currently not supported.',
+          );
+          return;
+        }
+
+        const rect = event.currentTarget.getBoundingClientRect();
 
         const boundingBox = {
           top: rect.top,
@@ -51,28 +65,49 @@ export function DocumentToolResult({type, result, setBlock}: DocumentToolResultP
       }}
     >
       <div className="text-muted-foreground mt-[2]">
-        {type === 'create' ? <FileIcon /> : type === 'update' ? <PencilEditIcon /> : type === 'request-suggestions' ? <MessageIcon /> : null}
+        {type === 'create' ? (
+          <FileIcon />
+        ) : type === 'update' ? (
+          <PencilEditIcon />
+        ) : type === 'request-suggestions' ? (
+          <MessageIcon />
+        ) : null}
       </div>
-      <div className="text-left" style={{direction: checkEnglishString(result.title) ? 'ltr' : 'rtl'}}>{`${getActionText(type, 'past')} "${
-        result.title
-      }"`}</div>
+      <div className="text-left" style={{direction: checkEnglishString(result.title) ? 'ltr' : 'rtl'}}>
+        {`${getActionText(type, 'past')} "${result.title}"`}
+      </div>
     </button>
   )
 }
 
+export const DocumentToolResult = memo(PureDocumentToolResult, () => true);
+
 interface DocumentToolCallProps {
-  type: 'create' | 'update' | 'request-suggestions'
-  args: {title: string}
-  setBlock: (value: SetStateAction<UIBlock>) => void
+  type: 'create' | 'update' | 'request-suggestions';
+  args: { title: string };
+  setBlock: (value: SetStateAction<UIBlock>) => void;
+  isReadonly: boolean;
 }
 
-export function DocumentToolCall({type, args, setBlock}: DocumentToolCallProps) {
+function PureDocumentToolCall({
+  type,
+  args,
+  setBlock,
+  isReadonly,
+}: DocumentToolCallProps) {
   return (
     <button
       type="button"
       className="cursor pointer w-fit border border-primary pb-2 pt-3 px-3 rounded-xl flex flex-row items-start justify-between gap-3"
       onClick={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect()
+        if (isReadonly) {
+          toast.error(
+            'Viewing files in shared chats is currently not supported.',
+          );
+          return;
+        }
+
+        const rect = event.currentTarget.getBoundingClientRect();
 
         const boundingBox = {
           top: rect.top,
@@ -100,3 +135,5 @@ export function DocumentToolCall({type, args, setBlock}: DocumentToolCallProps) 
     </button>
   )
 }
+
+export const DocumentToolCall = memo(PureDocumentToolCall, () => true);

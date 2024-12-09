@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-// import Link from 'next/link';
 
 import { MessageIcon } from './icons';
 import { XeracLogo } from "@/components/ui/xerac-logo";

@@ -1,45 +1,39 @@
 import type {Attachment, ChatRequestOptions, CreateMessage, Message} from 'ai'
-import cx from 'classnames'
-import {formatDistance} from 'date-fns'
-import {AnimatePresence, motion} from 'framer-motion'
-import {type Dispatch, type SetStateAction, useCallback, useEffect, useState} from 'react'
-import {toast} from 'sonner'
-import useSWR, {useSWRConfig} from 'swr'
-import {useCopyToClipboard, useDebounceCallback, useWindowSize} from 'usehooks-ts'
+import { formatDistance } from 'date-fns';
+import { AnimatePresence, motion } from 'framer-motion';
+import { type Dispatch, memo, type SetStateAction, useCallback, useEffect, useState} from 'react';
+import useSWR, { useSWRConfig } from 'swr';
+import { useDebounceCallback, useWindowSize } from 'usehooks-ts';
 
-import type {Document, Suggestion, Vote} from '@/lib/db/schema'
-import {fetcher} from '@/lib/utils'
+import type { Document, Suggestion, Vote } from '@/lib/db/schema';
+import { fetcher } from '@/lib/utils';
 
-import {DiffView} from './diffview'
-import {DocumentSkeleton} from './document-skeleton'
-import {Editor} from './editor'
-import {CopyIcon, CrossIcon, DeltaIcon, RedoIcon, UndoIcon} from './icons'
-import {PreviewMessage} from './message'
-import {MultimodalInput} from './multimodal-input'
-import {Toolbar} from './toolbar'
-import {Button} from './ui/button'
-import {Tooltip, TooltipContent, TooltipTrigger} from './ui/tooltip'
-import {useScrollToBottom} from './use-scroll-to-bottom'
-import {VersionFooter} from './version-footer'
-import {DocumentView} from './document-view'
-import {ImageView} from './image-view'
+import { DiffView } from './diffview';
+import { DocumentSkeleton } from './document-skeleton';
+import { Editor } from './editor';
+import { MultimodalInput } from './multimodal-input';
+import { Toolbar } from './toolbar';
+import { VersionFooter } from './version-footer';
+import { BlockActions } from './block-actions';
+import { BlockCloseButton } from './block-close-button';
+import { BlockMessages } from './block-messages';
 
 export interface UIBlock {
-  type: 'document' | 'image'
-  title: string
-  documentId: string
-  content: string
-  isVisible: boolean
-  status: 'streaming' | 'idle'
+  type: 'document' | 'image';
+  title: string;
+  documentId: string;
+  content: string;
+  isVisible: boolean;
+  status: 'streaming' | 'idle';
   boundingBox: {
-    top: number
-    left: number
-    width: number
-    height: number
-  }
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  };
 }
 
-export function Block({
+function PureBlock({
   chatId,
   input,
   setInput,
@@ -53,84 +47,98 @@ export function Block({
   setBlock,
   messages,
   setMessages,
+  reload,
   votes,
+  isReadonly,
 }: {
-  chatId: string
-  input: string
-  setInput: (input: string) => void
-  isLoading: boolean
-  stop: () => void
-  attachments: Array<Attachment>
-  setAttachments: Dispatch<SetStateAction<Array<Attachment>>>
-  block: UIBlock
-  setBlock: Dispatch<SetStateAction<UIBlock>>
-  messages: Array<Message>
-  setMessages: Dispatch<SetStateAction<Array<Message>>>
-  votes: Array<Vote> | undefined
-  append: (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions) => Promise<string | null | undefined>
+  chatId: string;
+  input: string;
+  setInput: (input: string) => void;
+  isLoading: boolean;
+  stop: () => void;
+  attachments: Array<Attachment>;
+  setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
+  block: UIBlock;
+  setBlock: Dispatch<SetStateAction<UIBlock>>;
+  messages: Array<Message>;
+  setMessages: Dispatch<SetStateAction<Array<Message>>>;
+  votes: Array<Vote> | undefined;
+  append: (
+    message: Message | CreateMessage,
+    chatRequestOptions?: ChatRequestOptions,
+  ) => Promise<string | null | undefined>;
   handleSubmit: (
     event?: {
-      preventDefault?: () => void
+      preventDefault?: () => void;
     },
-    chatRequestOptions?: ChatRequestOptions
-  ) => void
+    chatRequestOptions?: ChatRequestOptions,
+  ) => void;
+  reload: (
+    chatRequestOptions?: ChatRequestOptions,
+  ) => Promise<string | null | undefined>;
+  isReadonly: boolean;
 }) {
-  const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>()
-
   const {
     data: documents,
     isLoading: isDocumentsFetching,
     mutate: mutateDocuments,
-  } = useSWR<Array<Document>>(block && block.status !== 'streaming' ? `/api/document?id=${block.documentId}` : null, fetcher)
+  } = useSWR<Array<Document>>(
+    block && block.status !== 'streaming'
+      ? `/api/document?id=${block.documentId}`
+      : null,
+    fetcher,
+  );
 
-  const {data: suggestions} = useSWR<Array<Suggestion>>(
-    documents && block && block.status !== 'streaming' ? `/api/suggestions?documentId=${block.documentId}` : null,
+  const { data: suggestions } = useSWR<Array<Suggestion>>(
+    documents && block && block.status !== 'streaming'
+      ? `/api/suggestions?documentId=${block.documentId}`
+      : null,
     fetcher,
     {
       dedupingInterval: 5000,
-    }
-  )
+    },
+  );
 
-  const [mode, setMode] = useState<'edit' | 'diff'>('edit')
-  const [document, setDocument] = useState<Document | null>(null)
-  const [currentVersionIndex, setCurrentVersionIndex] = useState(-1)
+  const [mode, setMode] = useState<'edit' | 'diff'>('edit');
+  const [document, setDocument] = useState<Document | null>(null);
+  const [currentVersionIndex, setCurrentVersionIndex] = useState(-1);
 
   useEffect(() => {
     if (documents && documents.length > 0) {
-      const mostRecentDocument = documents.at(-1)
+      const mostRecentDocument = documents.at(-1);
 
       if (mostRecentDocument) {
-        setDocument(mostRecentDocument)
-        setCurrentVersionIndex(documents.length - 1)
+        setDocument(mostRecentDocument);
+        setCurrentVersionIndex(documents.length - 1);
         setBlock((currentBlock) => ({
           ...currentBlock,
           content: mostRecentDocument.content ?? '',
-        }))
+        }));
       }
     }
-  }, [documents, setBlock])
+  }, [documents, setBlock]);
 
   useEffect(() => {
-    mutateDocuments()
-  }, [block.status, mutateDocuments])
+    mutateDocuments();
+  }, [block.status, mutateDocuments]);
 
-  const {mutate} = useSWRConfig()
-  const [isContentDirty, setIsContentDirty] = useState(false)
+  const { mutate } = useSWRConfig();
+  const [isContentDirty, setIsContentDirty] = useState(false);
 
   const handleContentChange = useCallback(
     (updatedContent: string) => {
-      if (!block) return
+      if (!block) return;
 
       mutate<Array<Document>>(
         `/api/document?id=${block.documentId}`,
         async (currentDocuments) => {
-          if (!currentDocuments) return undefined
+          if (!currentDocuments) return undefined;
 
-          const currentDocument = currentDocuments.at(-1)
+          const currentDocument = currentDocuments.at(-1);
 
           if (!currentDocument || !currentDocument.content) {
-            setIsContentDirty(false)
-            return currentDocuments
+            setIsContentDirty(false);
+            return currentDocuments;
           }
 
           if (currentDocument.content !== updatedContent) {
@@ -140,73 +148,73 @@ export function Block({
                 title: block.title,
                 content: updatedContent,
               }),
-            })
+            });
 
-            setIsContentDirty(false)
+            setIsContentDirty(false);
 
             const newDocument = {
               ...currentDocument,
               content: updatedContent,
               createdAt: new Date(),
-            }
+            };
 
-            return [...currentDocuments, newDocument]
+            return [...currentDocuments, newDocument];
           }
-          return currentDocuments
+          return currentDocuments;
         },
-        {revalidate: false}
-      )
+        { revalidate: false },
+      );
     },
-    [block, mutate]
-  )
+    [block, mutate],
+  );
 
   const debouncedHandleContentChange = useDebounceCallback(handleContentChange, 2000)
 
   const saveContent = useCallback(
     (updatedContent: string, debounce: boolean) => {
       if (document && updatedContent !== document.content) {
-        setIsContentDirty(true)
+        setIsContentDirty(true);
 
         if (debounce) {
-          debouncedHandleContentChange(updatedContent)
+          debouncedHandleContentChange(updatedContent);
         } else {
-          handleContentChange(updatedContent)
+          handleContentChange(updatedContent);
         }
       }
     },
-    [document, debouncedHandleContentChange, handleContentChange]
-  )
+    [document, debouncedHandleContentChange, handleContentChange],
+  );
 
   function getDocumentContentById(index: number) {
-    if (!documents) return ''
-    if (!documents[index]) return ''
-    return documents[index].content ?? ''
+    if (!documents) return '';
+    if (!documents[index]) return '';
+    return documents[index].content ?? '';
   }
 
   const handleVersionChange = (type: 'next' | 'prev' | 'toggle' | 'latest') => {
-    if (!documents) return
+    if (!documents) return;
 
     if (type === 'latest') {
-      setCurrentVersionIndex(documents.length - 1)
-      setMode('edit')
+      setCurrentVersionIndex(documents.length - 1);
+      setMode('edit');
     }
 
     if (type === 'toggle') {
-      setMode((mode) => (mode === 'edit' ? 'diff' : 'edit'))
+      setMode((mode) => (mode === 'edit' ? 'diff' : 'edit'));
     }
 
     if (type === 'prev') {
       if (currentVersionIndex > 0) {
-        setCurrentVersionIndex((index) => index - 1)
+        setCurrentVersionIndex((index) => index - 1);
       }
     } else if (type === 'next') {
       if (currentVersionIndex < documents.length - 1) {
-        setCurrentVersionIndex((index) => index + 1)
+        setCurrentVersionIndex((index) => index + 1);
       }
     }
-  }
+  };
 
-  const [isToolbarVisible, setIsToolbarVisible] = useState(false)
+  const [isToolbarVisible, setIsToolbarVisible] = useState(false);
 
   /*
    * NOTE: if there are no documents, or if
@@ -216,10 +224,8 @@ export function Block({
 
   const isCurrentVersion = documents && documents.length > 0 ? currentVersionIndex === documents.length - 1 : true
 
-  const {width: windowWidth, height: windowHeight} = useWindowSize()
-  const isMobile = windowWidth ? windowWidth < 768 : false
-
-  const [_, copyToClipboard] = useCopyToClipboard()
+  const { width: windowWidth, height: windowHeight } = useWindowSize();
+  const isMobile = windowWidth ? windowWidth < 768 : false;
 
   return (
     <motion.div
@@ -262,21 +268,17 @@ export function Block({
           </AnimatePresence>
 
           <div className="flex flex-col h-full justify-between items-center gap-4">
-            <div ref={messagesContainerRef} className="flex flex-col gap-4 h-full items-center overflow-y-scroll px-4 pt-20">
-              {messages.map((message, index) => (
-                <PreviewMessage
-                  chatId={chatId}
-                  key={message.id}
-                  message={message}
-                  block={block}
-                  setBlock={setBlock}
-                  isLoading={isLoading && index === messages.length - 1}
-                  vote={votes ? votes.find((vote) => vote.messageId === message.id) : undefined}
-                />
-              ))}
-
-              <div ref={messagesEndRef} className="shrink-0 min-w-[24px] min-h-[24px]" />
-            </div>
+            <BlockMessages
+              chatId={chatId}
+              block={block}
+              isLoading={isLoading}
+              setBlock={setBlock}
+              votes={votes}
+              messages={messages}
+              setMessages={setMessages}
+              reload={reload}
+              isReadonly={isReadonly}
+            />
 
             <form className="flex flex-row gap-2 relative items-end w-full px-4 pb-4">
               <MultimodalInput
@@ -299,7 +301,7 @@ export function Block({
       )}
 
       <motion.div
-        className="fixed dark:bg-muted bg-background h-dvh flex flex-col shadow-xl"
+        className="fixed dark:bg-muted bg-background h-dvh flex flex-col shadow-xl overflow-y-scroll"
         initial={
           isMobile
             ? {
@@ -364,24 +366,13 @@ export function Block({
         {/* Block Header */}
         <div className="p-2 flex flex-row justify-between items-start">
           <div className="flex flex-row gap-4 items-start">
-            <Button
-              variant="outline"
-              className="h-fit p-2 dark:hover:bg-zinc-700"
-              onClick={() => {
-                setBlock((currentBlock) => ({
-                  ...currentBlock,
-                  isVisible: false,
-                }))
-              }}
-            >
-              <CrossIcon size={18} />
-            </Button>
+            <BlockCloseButton setBlock={setBlock} />
 
             <div className="flex flex-col">
               <div className="font-medium">{document?.title ?? block.title}</div>
 
               {isContentDirty ? (
-                <div className="text-sm text-muted-foreground">Saving changes...</div>
+                <div className="text-sm text-muted-foreground">در حال ذخیره سازی...</div>
               ) : document ? (
                 <div className="text-sm text-muted-foreground">
                   {`Updated ${formatDistance(new Date(document.createdAt), new Date(), {
@@ -394,71 +385,13 @@ export function Block({
             </div>
           </div>
 
-          <div className="flex flex-row gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="p-2 h-fit dark:hover:bg-zinc-700"
-                  onClick={() => {
-                    copyToClipboard(block.content)
-                    toast.success('Copied to clipboard!')
-                  }}
-                  disabled={block.status === 'streaming'}
-                >
-                  <CopyIcon size={18} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy to clipboard</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="p-2 h-fit dark:hover:bg-zinc-700 !pointer-events-auto"
-                  onClick={() => {
-                    handleVersionChange('prev')
-                  }}
-                  disabled={currentVersionIndex === 0 || block.status === 'streaming'}
-                >
-                  <UndoIcon size={18} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Previous version</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="p-2 h-fit dark:hover:bg-zinc-700 !pointer-events-auto"
-                  onClick={() => {
-                    handleVersionChange('next')
-                  }}
-                  disabled={isCurrentVersion || block.status === 'streaming'}
-                >
-                  <RedoIcon size={18} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Next version</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cx('p-2 h-fit !pointer-events-auto dark:hover:bg-zinc-700', {
-                    'bg-muted': mode === 'diff',
-                  })}
-                  onClick={() => {
-                    handleVersionChange('toggle')
-                  }}
-                  disabled={block.status === 'streaming' || currentVersionIndex === 0}
-                >
-                  <DeltaIcon size={18} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View changes</TooltipContent>
-            </Tooltip>
-          </div>
+          <BlockActions
+            block={block}
+            currentVersionIndex={currentVersionIndex}
+            handleVersionChange={handleVersionChange}
+            isCurrentVersion={isCurrentVersion}
+            mode={mode}
+          />
         </div>
 
         {/* Block Content */}
@@ -508,5 +441,9 @@ export function Block({
         </AnimatePresence>
       </motion.div>
     </motion.div>
-  )
+  );
 }
+
+export const Block = memo(PureBlock, (prevProps, nextProps) => {
+  return false;
+});

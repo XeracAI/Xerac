@@ -81,9 +81,11 @@ export async function POST(request: Request) {
     await saveChat({ id, userId: session.user.id, title });
   }
 
+  const userMessageId = generateUUID();
+
   await saveMessages({
     messages: [
-      { ...userMessage, id: generateUUID(), createdAt: new Date(), chatId: id },
+      { ...userMessage, id: userMessageId, createdAt: new Date(), chatId: id },
     ],
   });
 
@@ -91,6 +93,11 @@ export async function POST(request: Request) {
     case undefined:
     case 'text':
       const streamingData = new StreamData();
+
+      streamingData.append({
+        type: 'user-message-id',
+        content: userMessageId,
+      });
 
       const result = streamText({
         model: customModel(model.apiIdentifier),
@@ -275,8 +282,7 @@ export async function POST(request: Request) {
 
               const { elementStream } = streamObject({
                 model: customModel(model.apiIdentifier),
-                system:
-                  'You are a help writing assistant. Given a piece of writing, please offer suggestions to improve the piece of writing and describe the change. It is very important for the edits to contain full sentences instead of just words. Max 5 suggestions.',
+                system: 'You are a help writing assistant. Given a piece of writing, please offer suggestions to improve the piece of writing and describe the change. It is very important for the edits to contain full sentences instead of just words. Max 5 suggestions.',
                 prompt: document.content,
                 output: 'array',
                 schema: z.object({

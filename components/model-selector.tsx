@@ -17,9 +17,8 @@ import {
 import { modelGroups, models } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
-import { CheckCirclFillIcon, ChevronDownIcon } from './icons';
+import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
 import Image from "next/image";
-// import gptLogo from '@/assets/icons/third-party-logos/providers/openai.svg';
 
 
 export function ModelSelector({
@@ -31,7 +30,7 @@ export function ModelSelector({
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] = useOptimistic(selectedModelId);
 
-  const selectModel = useMemo(
+  const selectedModel = useMemo(
     () => models.find((model) => model.id === optimisticModelId),
     [optimisticModelId],
   );
@@ -40,7 +39,7 @@ export function ModelSelector({
     <DropdownMenu open={open} onOpenChange={setOpen} dir="rtl">
       <DropdownMenuTrigger className={cn('w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground', className)} asChild>
         <Button variant="outline" className="md:px-2 md:h-[34px]">
-          {selectModel?.label}
+          {selectedModel?.label}
           <ChevronDownIcon />
         </Button>
       </DropdownMenuTrigger>
@@ -81,7 +80,7 @@ export function ModelSelector({
                   </div>
 
                   <div className="text-primary dark:text-primary-foreground opacity-0 group-data-[active=true]/item:opacity-100">
-                    <CheckCirclFillIcon />
+                    <CheckCircleFillIcon />
                   </div>
 
                   {model.status === 'coming-soon' && (
