@@ -1,5 +1,3 @@
-'use client';
-
 import type { Message } from 'ai';
 import cx from 'classnames';
 import { motion } from 'framer-motion';
@@ -14,6 +12,7 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
+import { checkEnglishString } from "@/lib/utils";
 
 export const PreviewMessage = ({
   chatId,
@@ -50,7 +49,7 @@ export const PreviewMessage = ({
 
         <div className="flex flex-col gap-2 w-full">
           {message.content && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4" style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}>
               <Markdown>{message.content as string}</Markdown>
             </div>
           )}
@@ -176,7 +175,7 @@ export const ThinkingMessage = () => {
 
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col gap-4 text-muted-foreground">
-            Thinking...
+            در حال فکر کردن...
           </div>
         </div>
       </div>

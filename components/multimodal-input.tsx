@@ -1,5 +1,3 @@
-'use client';
-
 import type {
   Attachment,
   ChatRequestOptions,
@@ -21,7 +19,7 @@ import {
 import { toast } from 'sonner';
 import { useLocalStorage, useWindowSize } from 'usehooks-ts';
 
-import { sanitizeUIMessages } from '@/lib/utils';
+import { checkEnglishString, sanitizeUIMessages } from '@/lib/utils';
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { PreviewAttachment } from './preview-attachment';
@@ -213,7 +211,7 @@ export function MultimodalInput({
               >
                 <Button
                   variant="ghost"
-                  onClick={async () => {
+                  onClick={() => {
                     window.history.replaceState({}, '', `/chat/${chatId}`);
 
                     append({
@@ -264,7 +262,7 @@ export function MultimodalInput({
 
       <Textarea
         ref={textareaRef}
-        placeholder="Send a message..."
+        placeholder="پیام خود را در اینجا بنویسید..."
         value={input}
         onChange={handleInput}
         className={cx(
@@ -284,6 +282,7 @@ export function MultimodalInput({
             }
           }
         }}
+        style={{ direction: checkEnglishString(input) ? "ltr" : "rtl" }}
       />
 
       {isLoading ? (

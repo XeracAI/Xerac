@@ -8,8 +8,75 @@ import type { MutableRefObject } from 'react';
 
 import { buildContentFromDocument } from './functions';
 
+const baseNodes = addListNodes(schema.spec.nodes, 'paragraph block*', 'block');
+
 export const documentSchema = new Schema({
-  nodes: addListNodes(schema.spec.nodes, 'paragraph block*', 'block'),
+  nodes: baseNodes
+    .update('paragraph', {
+      content: 'inline*',
+      group: 'block',
+      attrs: { style: { default: null } },
+      parseDOM: [{
+        tag: 'p',
+        getAttrs: (dom) => {
+          const element = dom as HTMLElement;
+          return { style: element.getAttribute('style') };
+        }
+      }],
+      toDOM: (node) => ['p', { style: node.attrs.style || '' }, 0]
+    })
+    .update('heading', {
+      attrs: { 
+        level: { default: 1 },
+        style: { default: null }
+      },
+      content: 'inline*',
+      group: 'block',
+      defining: true,
+      parseDOM: [{
+        tag: 'h1',
+        attrs: { level: 1 },
+        getAttrs: (dom) => ({
+          style: (dom as HTMLElement).getAttribute('style')
+        })
+      }, {
+        tag: 'h2',
+        attrs: { level: 2 },
+        getAttrs: (dom) => ({
+          style: (dom as HTMLElement).getAttribute('style')
+        })
+      }, {
+        tag: 'h3',
+        attrs: { level: 3 },
+        getAttrs: (dom) => ({
+          style: (dom as HTMLElement).getAttribute('style')
+        })
+      }],
+      toDOM: (node) => [`h${node.attrs.level}`, { style: node.attrs.style || '' }, 0]
+    })
+    .update('bullet_list', {
+      content: 'list_item+',
+      group: 'block',
+      attrs: { style: { default: null } },
+      parseDOM: [{
+        tag: 'ul',
+        getAttrs: (dom) => ({
+          style: (dom as HTMLElement).getAttribute('style')
+        })
+      }],
+      toDOM: (node) => ['ul', { style: node.attrs.style || '' }, 0]
+    })
+    .update('list_item', {
+      content: 'paragraph block*',
+      attrs: { style: { default: null } },
+      parseDOM: [{
+        tag: 'li',
+        getAttrs: (dom) => ({
+          style: (dom as HTMLElement).getAttribute('style')
+        })
+      }],
+      toDOM: (node) => ['li', { style: node.attrs.style || '' }, 0]
+    }),
   marks: schema.spec.marks,
 });
 

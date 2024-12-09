@@ -2,10 +2,30 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 import { auth } from '@/app/(auth)/auth';
-import { Chat as PreviewChat } from '@/components/chat';
+import { Chat } from '@/components/chat';
 import { DEFAULT_MODEL_NAME, models } from '@/lib/ai/models';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
+import type {Metadata, ResolvingMetadata} from "next";
+
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  // read route params
+  const id = (await params).id
+
+  // fetch data
+  const chat = await getChatById({ id });
+
+  return {
+    title: `${chat.title} | زیرک`,
+  }
+}
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -37,7 +57,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     DEFAULT_MODEL_NAME;
 
   return (
-    <PreviewChat
+    <Chat
       id={chat.id}
       initialMessages={convertToUIMessages(messagesFromDb)}
       selectedModelId={selectedModelId}

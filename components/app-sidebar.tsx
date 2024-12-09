@@ -25,7 +25,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <Sidebar className="group-data-[side=left]:border-r-0">
+    <Sidebar className="group-data-[side=left]:border-r-0" side="right">
       <SidebarHeader>
         <SidebarMenu>
           <div className="flex flex-row justify-between items-center">
@@ -37,9 +37,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               className="flex flex-row gap-3 items-center"
             >
               <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                Chatbot
+                زیرک
               </span>
             </Link>
+
             <BetterTooltip content="New Chat" align="start">
               <Button
                 variant="ghost"
@@ -47,7 +48,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 className="p-2 h-fit"
                 onClick={() => {
                   setOpenMobile(false);
-                  router.push('/');
+                  router.push('/chat');
                   router.refresh();
                 }}
               >

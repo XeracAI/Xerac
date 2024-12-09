@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       {
         hostname: 'avatar.vercel.sh',
       },
+      {
+        hostname: 'oaidalleapiprodscus.blob.core.windows.net',
+      },
     ],
   },
 };

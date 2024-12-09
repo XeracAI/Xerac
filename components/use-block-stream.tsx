@@ -42,18 +42,21 @@ export function useBlockStream({
         case 'id':
           return {
             ...draftBlock,
+            type: 'document',
             documentId: delta.content as string,
           };
 
         case 'title':
           return {
             ...draftBlock,
+            type: 'document',
             title: delta.content as string,
           };
 
         case 'text-delta':
           return {
             ...draftBlock,
+            type: 'document',
             content: draftBlock.content + (delta.content as string),
             isVisible:
               draftBlock.status === 'streaming' &&
@@ -72,11 +75,15 @@ export function useBlockStream({
             ]);
           }, 0);
 
-          return draftBlock;
+          return {
+            ...draftBlock,
+            type: 'document',
+          };
 
         case 'clear':
           return {
             ...draftBlock,
+            type: 'document',
             content: '',
             status: 'streaming',
           };
@@ -84,11 +91,15 @@ export function useBlockStream({
         case 'finish':
           return {
             ...draftBlock,
+            type: 'document',
             status: 'idle',
           };
 
         default:
-          return draftBlock;
+          return {
+            ...draftBlock,
+            type: 'document',
+          };
       }
     });
   }, [streamingData, setBlock]);

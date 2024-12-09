@@ -11,12 +11,14 @@ import { ChatHeader } from '@/components/chat-header';
 import { PreviewMessage, ThinkingMessage } from '@/components/message';
 import { useScrollToBottom } from '@/components/use-scroll-to-bottom';
 import type { Vote } from '@/lib/db/schema';
-import { fetcher } from '@/lib/utils';
+import { fetcher, generateUUID } from '@/lib/utils';
 
 import { Block, type UIBlock } from './block';
 import { BlockStreamHandler } from './block-stream-handler';
 import { MultimodalInput } from './multimodal-input';
 import { Overview } from './overview';
+import { models } from "@/lib/ai/models";
+import type { ImageData } from "@/lib/ai";
 
 export function Chat({
   id,
@@ -42,15 +44,13 @@ export function Chat({
   } = useChat({
     body: { id, modelId: selectedModelId },
     initialMessages,
-    onFinish: () => {
-      mutate('/api/history');
-    },
+    onFinish: () => mutate('/api/history'),
   });
 
-  const { width: windowWidth = 1920, height: windowHeight = 1080 } =
-    useWindowSize();
+  const { width: windowWidth = 1920, height: windowHeight = 1080 } = useWindowSize();
 
   const [block, setBlock] = useState<UIBlock>({
+    type: 'document',
     documentId: 'init',
     content: '',
     title: '',
@@ -63,6 +63,60 @@ export function Chat({
       height: 50,
     },
   });
+
+  const handleSubmitWrapper = () => {
+    const selectedModel = models.find((model) => model.id === selectedModelId)
+
+    switch (selectedModel?.output) {
+      case undefined:
+      case 'text':
+        handleSubmit(...arguments);
+        break;
+      case 'image':
+        const newMessage: Message = {id: generateUUID(), role: 'user', content: input}
+        setMessages((currentMessages) => [...currentMessages, newMessage])
+
+        setInput('')
+
+        fetch(
+          '/api/chat',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({id, modelId: selectedModelId, messages: [newMessage]})
+          }
+        ).then((response) => response.json()).then((responseData: ImageData) => {
+          let documentId, content;
+          if (responseData.url) {
+            documentId = (responseData.url.split('/').pop() ?? "").split('?')[0].split('.')[0]
+            content = `![alt](${responseData.url})` // TODO replace alt with generated title after it was handled
+            content = responseData.url // TODO replace alt with generated title after it was handled
+          } else {
+            documentId = generateUUID();
+            // content = `![alt](data:image/png;base64,${responseData.b64_json})`
+            content = `data:image/png;base64,${responseData.b64_json}`
+          }
+
+          setBlock({
+            type: 'image',
+            documentId,
+            content,
+            title: '', // TODO replace with generated title after it was handled
+            status: 'idle',
+            isVisible: true,
+            boundingBox: {
+              top: windowHeight / 4,
+              left: windowWidth / 4,
+              width: 250,
+              height: 50,
+            },
+          })
+        })
+        break;
+    }
+  }
 
   const { data: votes } = useSWR<Array<Vote>>(
     `/api/vote?chatId=${id}`,
@@ -116,7 +170,7 @@ export function Chat({
             chatId={id}
             input={input}
             setInput={setInput}
-            handleSubmit={handleSubmit}
+            handleSubmit={handleSubmitWrapper}
             isLoading={isLoading}
             stop={stop}
             attachments={attachments}
@@ -134,7 +188,7 @@ export function Chat({
             chatId={id}
             input={input}
             setInput={setInput}
-            handleSubmit={handleSubmit}
+            handleSubmit={handleSubmitWrapper}
             isLoading={isLoading}
             stop={stop}
             attachments={attachments}

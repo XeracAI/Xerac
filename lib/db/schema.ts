@@ -1,4 +1,4 @@
-import type { InferSelectModel } from 'drizzle-orm';
+import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import {
   pgTable,
   varchar,
@@ -36,11 +36,16 @@ export const message = pgTable('Message', {
     .notNull()
     .references(() => chat.id),
   role: varchar('role').notNull(),
-  content: json('content').notNull(),
+  content: json('content'),
+  images: json('images'),
+  audios: json('audios'),
+  videos: json('videos'),
+  voice: json('voice'),
   createdAt: timestamp('createdAt').notNull(),
 });
 
 export type Message = InferSelectModel<typeof message>;
+export type MessageInsert = InferInsertModel<typeof message>;
 
 export const vote = pgTable(
   'Vote',

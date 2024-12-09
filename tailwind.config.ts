@@ -11,6 +11,8 @@ const config: Config = {
     fontFamily: {
       sans: ['geist'],
       mono: ['geist-mono'],
+      shabnam: ["var(--font-shabnam)"],
+      yekanbakh: ["var(--font-yekan-bakh)"],
     },
     extend: {
       borderRadius: {

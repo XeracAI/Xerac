@@ -1,4 +1,4 @@
-'server-only';
+import 'server-only';
 
 import { genSaltSync, hashSync } from 'bcrypt-ts';
 import { and, asc, desc, eq, gt } from 'drizzle-orm';
@@ -12,9 +12,9 @@ import {
   document,
   type Suggestion,
   suggestion,
-  type Message,
   message,
   vote,
+  type MessageInsert,
 } from './schema';
 
 // Optionally, if not using email/pass login, you can
@@ -103,7 +103,7 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function saveMessages({ messages }: { messages: Array<Message> }) {
+export async function saveMessages({ messages }: { messages: Array<MessageInsert> }) {
   try {
     return await db.insert(message).values(messages);
   } catch (error) {

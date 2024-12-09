@@ -4,11 +4,12 @@ import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
+import './scrollbar.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Next.js Chatbot Template',
-  description: 'Next.js chatbot template using the AI SDK.',
+  metadataBase: new URL('https://xerac.ir'),
+  title: 'زیرک | هوش مصنوعی، به سادگی',
+  description: 'زیرک، هاب ارتباطی شما با دنیای هوش مصنوعی است.',
 };
 
 export const viewport = {
@@ -42,7 +43,8 @@ export default async function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="fa"
+      dir="rtl"
       // `next-themes` injects an extra classname to the body element to avoid
       // visual flicker before hydration. Hence the `suppressHydrationWarning`
       // prop is necessary to avoid the React hydration mismatch warning.
@@ -61,7 +63,6 @@ export default async function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
         >
           <Toaster position="top-center" />
           {children}

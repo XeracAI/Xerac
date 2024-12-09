@@ -222,3 +222,10 @@ export function getMessageIdFromAnnotations(message: Message) {
   // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
   return annotation.messageIdFromServer;
 }
+
+export function checkEnglishString(str: string | undefined) {
+  if (typeof str !== "string" || str.length === 0) {
+    return false;
+  }
+  return /^[a-zA-Z]+$/.test(str.replace(/[\p{P}\p{N}\s<>]+/gu, "")[0]);
+}
