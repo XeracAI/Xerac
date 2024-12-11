@@ -23,21 +23,15 @@ export const chat = pgTable('Chat', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   createdAt: timestamp('createdAt').notNull(),
   title: text('title').notNull(),
-  userId: uuid('userId')
-    .notNull()
-    .references(() => user.id),
-  visibility: varchar('visibility', { enum: ['public', 'private'] })
-    .notNull()
-    .default('private'),
+  userId: uuid('userId').notNull().references(() => user.id),
+  visibility: varchar('visibility', { enum: ['public', 'private'] }).notNull().default('private'),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
 
 export const message = pgTable('Message', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
-  chatId: uuid('chatId')
-    .notNull()
-    .references(() => chat.id),
+  chatId: uuid('chatId').notNull().references(() => chat.id),
   role: varchar('role').notNull(),
   content: json('content'),
   images: json('images'),
@@ -53,12 +47,8 @@ export type MessageInsert = InferInsertModel<typeof message>;
 export const vote = pgTable(
   'Vote',
   {
-    chatId: uuid('chatId')
-      .notNull()
-      .references(() => chat.id),
-    messageId: uuid('messageId')
-      .notNull()
-      .references(() => message.id),
+    chatId: uuid('chatId').notNull().references(() => chat.id),
+    messageId: uuid('messageId').notNull().references(() => message.id),
     isUpvoted: boolean('isUpvoted').notNull(),
   },
   (table) => {
@@ -77,9 +67,7 @@ export const document = pgTable(
     createdAt: timestamp('createdAt').notNull(),
     title: text('title').notNull(),
     content: text('content'),
-    userId: uuid('userId')
-      .notNull()
-      .references(() => user.id),
+    userId: uuid('userId').notNull().references(() => user.id),
   },
   (table) => {
     return {
@@ -100,9 +88,7 @@ export const suggestion = pgTable(
     suggestedText: text('suggestedText').notNull(),
     description: text('description'),
     isResolved: boolean('isResolved').notNull().default(false),
-    userId: uuid('userId')
-      .notNull()
-      .references(() => user.id),
+    userId: uuid('userId').notNull().references(() => user.id),
     createdAt: timestamp('createdAt').notNull(),
   },
   (table) => ({

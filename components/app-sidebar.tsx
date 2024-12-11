@@ -58,10 +58,9 @@ export function AppSidebar({ user }: { user: User | undefined }) {
           </div>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <SidebarGroup className="-mx-2">
-          <SidebarHistory user={user} />
-        </SidebarGroup>
+        <SidebarHistory user={user} />
       </SidebarContent>
       <SidebarFooter className="gap-0 -mx-2">
         {user && (
