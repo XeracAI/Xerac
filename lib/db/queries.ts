@@ -68,6 +68,15 @@ export async function saveChat({
   }
 }
 
+export async function updateChatById({ id, title }: { id: string; title: string }) {
+  try {
+    return await db.update(chat).set({ title }).where(eq(chat.id, id));
+  } catch (error) {
+    console.error('Failed to update chat by id in database');
+    throw error;
+  }
+}
+
 export async function deleteChatById({ id }: { id: string }) {
   try {
     await db.delete(vote).where(eq(vote.chatId, id));

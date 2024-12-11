@@ -46,6 +46,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Check, X } from 'lucide-react';
 import type { Chat } from '@/lib/db/schema';
 import { fetcher } from '@/lib/utils';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
@@ -73,83 +74,108 @@ const PureChatItem = ({
     chatId: chat.id,
     initialVisibility: chat.visibility,
   });
+  const [editMode, setEditMode] = useState(false);
+  const [inputValue, setInputValue] = useState(chat.title || "");
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isActive}>
-        <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-          <span>{chat.title}</span>
-        </Link>
-      </SidebarMenuButton>
+      {
+        editMode ? (
+          <div className="flex items-center h-[32px] w-[80%]">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="w-full p-1 rounded-md"
+            />
+            <Check className="absolute top-1 left-8" height={20} width={20} />
+          </div>
+        ) : (
+          <SidebarMenuButton asChild isActive={isActive}>
+            <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
+              <span>{chat.title}</span>
+            </Link>
+          </SidebarMenuButton>
+        )
+      }
 
-      <DropdownMenu modal={true} dir="rtl">
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuAction
-            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground mr-0.5"
-            showOnHover={!isActive}
-          >
-            <MoreHorizontalIcon />
-            <span className="sr-only">بیشتر</span>
-          </SidebarMenuAction>
-        </DropdownMenuTrigger>
+      {
+        editMode ?
+          <X className="absolute left-1 top-1 cursor-pointer" height={20} width={20} onClick={() => setEditMode(false)} /> :
+          <DropdownMenu modal={true} dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuAction
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground mr-0.5"
+                showOnHover={!isActive}
+              >
+                <MoreHorizontalIcon />
+                <span className="sr-only">بیشتر</span>
+              </SidebarMenuAction>
+            </DropdownMenuTrigger>
 
-        <DropdownMenuContent side="bottom" align="start">
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="cursor-pointer">
-              <ShareIcon />
-              <span>اشتراک گذاری</span>
-            </DropdownMenuSubTrigger>
+            <DropdownMenuContent side="bottom" align="start">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer">
+                  <ShareIcon />
+                  <span>اشتراک گذاری</span>
+                </DropdownMenuSubTrigger>
 
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem
-                  className="cursor-pointer flex-row justify-between"
-                  onClick={() => {
-                    setVisibilityType('private');
-                  }}
-                >
-                  <div className="flex flex-row gap-2 items-center">
-                    <LockIcon size={12} />
-                    <span>خصوصی</span>
-                  </div>
-                  {visibilityType === 'private' ? (
-                    <CheckCircleFillIcon />
-                  ) : null}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer flex-row justify-between"
-                  onClick={() => {
-                    setVisibilityType('public');
-                  }}
-                >
-                  <div className="flex flex-row gap-2 items-center">
-                    <GlobeIcon />
-                    <span>عمومی</span>
-                  </div>
-                  {visibilityType === 'public' ? <CheckCircleFillIcon /> : null}
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      className="cursor-pointer flex-row justify-between"
+                      onClick={() => {
+                        setVisibilityType('private');
+                      }}
+                    >
+                      <div className="flex flex-row gap-2 items-center">
+                        <LockIcon size={12} />
+                        <span>خصوصی</span>
+                      </div>
+                      {visibilityType === 'private' ? (
+                        <CheckCircleFillIcon />
+                      ) : null}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer flex-row justify-between"
+                      onClick={() => {
+                        setVisibilityType('public');
+                      }}
+                    >
+                      <div className="flex flex-row gap-2 items-center">
+                        <GlobeIcon />
+                        <span>عمومی</span>
+                      </div>
+                      {visibilityType === 'public' ? <CheckCircleFillIcon /> : null}
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
 
-          <DropdownMenuSeparator/>
+              <DropdownMenuSeparator/>
 
-          <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:bg-destructive/15 focus:text-destructive dark:text-red-500"
-            onSelect={() => onDelete(chat.id)}
-          >
-            <TrashIcon />
-            <span>حذف</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={() => setEditMode(true)}
+              >
+                <TrashIcon />
+                <span>ویرایش</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:bg-destructive/15 focus:text-destructive dark:text-red-500"
+                onSelect={() => onDelete(chat.id)}
+              >
+                <TrashIcon />
+                <span>حذف</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+      }
     </SidebarMenuItem>
   );
 };
 
-export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  return prevProps.isActive === nextProps.isActive;
-});
+export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => prevProps.isActive === nextProps.isActive);
 
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
@@ -170,6 +196,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const router = useRouter();
+
   const handleDelete = async () => {
     const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
       method: 'DELETE',

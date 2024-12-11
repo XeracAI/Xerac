@@ -18,7 +18,7 @@ import {
   saveChat,
   saveDocument,
   saveMessages,
-  saveSuggestions,
+  saveSuggestions, updateChatById,
 } from '@/lib/db/queries';
 import type { Suggestion } from '@/lib/db/schema';
 import {
@@ -390,6 +390,39 @@ export async function POST(request: Request) {
       }
 
       return Response.json(imageData);
+  }
+}
+
+export async function PATCH(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+
+  if (!id) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  const session = await auth();
+
+  if (!session || !session.user) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  try {
+    const chat = await getChatById({ id });
+
+    if (chat.userId !== session.user.id) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const { title }: { title: string } = await request.json();
+
+    await updateChatById({ id, title });
+
+    return new Response('Chat updated', { status: 200 });
+  } catch (error) {
+    return new Response('An error occurred while processing your request', {
+      status: 500,
+    });
   }
 }
 
