@@ -45,7 +45,7 @@ export function ModelSelector({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start">
-        {modelGroups.map((modelGroup) => (
+        {modelGroups.map((modelGroup, index) => (
           <>
             <DropdownMenuGroup key={modelGroup.id}>
               <DropdownMenuLabel>{modelGroup.title}</DropdownMenuLabel>
@@ -90,7 +90,7 @@ export function ModelSelector({
               ))}
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator key={modelGroup.id + "-sep"}/>
+            {index < modelGroups.length - 1 && <DropdownMenuSeparator key={modelGroup.id + "-sep"}/>}
           </>
         ))}
       </DropdownMenuContent>

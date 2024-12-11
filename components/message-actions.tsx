@@ -31,8 +31,7 @@ export function MessageActions({
 
   if (isLoading) return null;
   if (message.role === 'user') return null;
-  if (message.toolInvocations && message.toolInvocations.length > 0)
-    return null;
+  if (message.toolInvocations && message.toolInvocations.length > 0) return null;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -50,7 +49,7 @@ export function MessageActions({
               <CopyIcon />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Copy</TooltipContent>
+          <TooltipContent>کپی</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -104,7 +103,7 @@ export function MessageActions({
               <ThumbUpIcon />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Upvote Response</TooltipContent>
+          <TooltipContent>پاسخ خوب</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -158,7 +157,7 @@ export function MessageActions({
               <ThumbDownIcon />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Downvote Response</TooltipContent>
+          <TooltipContent>پاسخ بد</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

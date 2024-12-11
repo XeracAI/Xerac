@@ -25,10 +25,10 @@ export const Overview = ({selectedModelId}: {selectedModelId: string}) => {
                 <Image src={model.icon.light} alt={model.label} width={48} height={48} className="dark:hidden" />
                 <Image src={model.icon.dark} alt={model.label} width={48} height={48} className="hidden dark:block" />
               </> :
-              <XeracLogo className="size-12" />
+              <MessageIcon size={48} />
           }
           <span>+</span>
-          <MessageIcon size={48} />
+          <XeracLogo className="size-12" />
         </p>
         <p>
           {model?.description}

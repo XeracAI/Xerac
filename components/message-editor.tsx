@@ -7,6 +7,7 @@ import { Textarea } from './ui/textarea';
 import { deleteTrailingMessages } from '@/app/(chat)/chat/actions';
 import { toast } from 'sonner';
 import { useUserMessageId } from '@/hooks/use-user-message-id';
+import { checkEnglishString } from "@/lib/utils";
 
 export type MessageEditorProps = {
   message: Message;
@@ -56,18 +57,10 @@ export function MessageEditor({
         className="bg-transparent outline-none overflow-hidden resize-none !text-base rounded-xl w-full"
         value={draftContent}
         onChange={handleInput}
+        style={{ direction: checkEnglishString(draftContent) ? "ltr" : "rtl" }}
       />
 
-      <div className="flex flex-row gap-2 justify-end">
-        <Button
-          variant="outline"
-          className="h-fit py-2 px-3"
-          onClick={() => {
-            setMode('view');
-          }}
-        >
-          Cancel
-        </Button>
+      <div className="flex flex-row gap-2 justify-start">
         <Button
           variant="default"
           className="h-fit py-2 px-3"
@@ -105,7 +98,16 @@ export function MessageEditor({
             await reload();
           }}
         >
-          {isSubmitting ? 'Sending...' : 'Send'}
+          {isSubmitting ? 'در حال ارسال...' : 'ارسال'}
+        </Button>
+        <Button
+          variant="outline"
+          className="h-fit py-2 px-3"
+          onClick={() => {
+            setMode('view');
+          }}
+        >
+          لغو
         </Button>
       </div>
     </div>
