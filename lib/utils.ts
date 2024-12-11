@@ -120,6 +120,7 @@ export function convertToUIMessages(
       role: message.role as Message['role'],
       content: textContent,
       toolInvocations,
+      annotations: [{model: message.model}]
     });
 
     return chatMessages;
@@ -216,7 +217,8 @@ export function getDocumentTimestampByIndex(
 export function getMessageIdFromAnnotations(message: Message) {
   if (!message.annotations) return message.id;
 
-  const [annotation] = message.annotations;
+  // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
+  const annotation = message.annotations.find((annotation) => annotation && annotation.messageIdFromServer);
   if (!annotation) return message.id;
 
   // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation

@@ -20,7 +20,7 @@ import {
   saveMessages,
   saveSuggestions, updateChatById,
 } from '@/lib/db/queries';
-import type { Suggestion } from '@/lib/db/schema';
+import type { MessageInsert, Suggestion } from '@/lib/db/schema';
 import {
   generateUUID,
   getMostRecentUserMessage,
@@ -344,19 +344,25 @@ export async function POST(request: Request) {
                   (message) => {
                     const messageId = generateUUID();
 
-                    if (message.role === 'assistant') {
-                      streamingData.appendMessageAnnotation({
-                        messageIdFromServer: messageId,
-                      });
-                    }
-
-                    return {
+                    const dbMessage: MessageInsert = {
                       id: messageId,
                       chatId: id,
                       role: message.role,
                       content: message.content,
                       createdAt: new Date(),
                     };
+
+                    if (message.role === 'assistant') {
+                      streamingData.appendMessageAnnotation({
+                        messageIdFromServer: messageId,
+                      });
+                      streamingData.appendMessageAnnotation({
+                        model: modelId,
+                      });
+                      dbMessage.model = modelId;
+                    }
+
+                    return dbMessage;
                   },
                 ),
               });
@@ -382,7 +388,7 @@ export async function POST(request: Request) {
       try {
         await saveMessages({
           messages: [
-            { id: generateUUID(), createdAt: new Date(), chatId: id, role: 'assistant', images: [imageData] },
+            { id: generateUUID(), createdAt: new Date(), chatId: id, role: 'assistant', images: [imageData], model: modelId },
           ],
         })
       } catch (error) {

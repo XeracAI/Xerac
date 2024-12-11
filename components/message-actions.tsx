@@ -19,11 +19,13 @@ export function MessageActions({
   chatId,
   message,
   vote,
+  model,
   isLoading,
 }: {
   chatId: string;
   message: Message;
   vote: Vote | undefined;
+  model: string;
   isLoading: boolean;
 }) {
   const { mutate } = useSWRConfig();
@@ -159,6 +161,8 @@ export function MessageActions({
           </TooltipTrigger>
           <TooltipContent>پاسخ بد</TooltipContent>
         </Tooltip>
+
+        <div>{model}</div>
       </div>
     </TooltipProvider>
   );

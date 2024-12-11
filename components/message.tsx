@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { cn, checkEnglishString } from "@/lib/utils";
+import { DEFAULT_MODEL_NAME, models } from "@/lib/ai/models";
 
 const PurePreviewMessage = ({
   chatId,
@@ -211,6 +212,8 @@ const PurePreviewMessage = ({
               chatId={chatId}
               message={message}
               vote={vote}
+              // @ts-expect-error model is not defined in MessageAnnotation
+              model={models.find((model) => model.id === message.annotations?.find((annotation) => annotation && annotation.model) || DEFAULT_MODEL_NAME).label}
               isLoading={isLoading}
             />
           )}

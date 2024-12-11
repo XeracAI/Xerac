@@ -39,6 +39,8 @@ export const message = pgTable('Message', {
   videos: json('videos'),
   voice: json('voice'),
   createdAt: timestamp('createdAt').notNull(),
+
+  model: varchar('model'),
 });
 
 export type Message = InferSelectModel<typeof message>;
