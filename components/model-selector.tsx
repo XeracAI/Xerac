@@ -44,7 +44,7 @@ export function ModelSelector({
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="start" className="max-h-[90vh] overflow-scroll">
         {modelGroups.map((modelGroup, index) => (
           <>
             <DropdownMenuGroup key={modelGroup.id}>
