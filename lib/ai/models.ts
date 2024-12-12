@@ -185,7 +185,8 @@ const cheapestPrefixes = [
 
 const specificPrefixes = [
   'claude-3-opus-',
-  'o1',
+  'o1-preview',
+  'o1-mini',
   'grok'
 ];
 
