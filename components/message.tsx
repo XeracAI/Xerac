@@ -19,7 +19,8 @@ import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { cn, checkEnglishString } from "@/lib/utils";
-import { DEFAULT_MODEL_NAME, models } from "@/lib/ai/models";
+import { models } from "@/lib/ai/models";
+import Image from "next/image";
 
 const PurePreviewMessage = ({
   chatId,
@@ -48,6 +49,13 @@ const PurePreviewMessage = ({
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
+  let model = null;
+  // @ts-expect-error model is not defined in MessageAnnotation
+  const modelId = message.annotations?.find((annotation) => annotation && annotation.model)?.model;
+  if (modelId) {
+    model = models.find((model) => model.id === modelId);
+  }
+
   return (
     <motion.div
       className="w-full mx-auto max-w-3xl px-4 group/message"
@@ -66,7 +74,16 @@ const PurePreviewMessage = ({
       >
         {message.role === 'assistant' && (
           <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-            <SparklesIcon size={14} />
+            {
+              model ? (
+                <>
+                  <Image src={model.icon.light} alt={model.label} width={18} height={18} className="dark:hidden" />
+                  <Image src={model.icon.dark} alt={model.label} width={18} height={18} className="hidden dark:block" />
+                </>
+              ) : (
+                <SparklesIcon size={14} />
+              )
+            }
           </div>
         )}
 
@@ -212,8 +229,7 @@ const PurePreviewMessage = ({
               chatId={chatId}
               message={message}
               vote={vote}
-              // @ts-expect-error model is not defined in MessageAnnotation
-              model={models.find((model) => model.id === message.annotations?.find((annotation) => annotation && annotation.model) || DEFAULT_MODEL_NAME).label}
+              model={model?.label || "Loading..."}
               isLoading={isLoading}
             />
           )}

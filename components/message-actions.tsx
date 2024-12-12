@@ -39,7 +39,7 @@ export function PureMessageActions({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex flex-row gap-2">
+      <div className="flex flex-row gap-2 items-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -75,7 +75,7 @@ export function PureMessageActions({
                 });
 
                 toast.promise(upvote, {
-                  loading: 'Upvoting Response...',
+                  loading: 'در حال ثبت...',
                   success: () => {
                     mutate<Array<Vote>>(
                       `/api/vote?chatId=${chatId}`,
@@ -98,9 +98,9 @@ export function PureMessageActions({
                       { revalidate: false },
                     );
 
-                    return 'Upvoted Response!';
+                    return 'نظر شما ثبت شد!';
                   },
-                  error: 'Failed to upvote response.',
+                  error: 'خطایی در ثبت نظر رخ داد.',
                 });
               }}
             >
@@ -129,7 +129,7 @@ export function PureMessageActions({
                 });
 
                 toast.promise(downvote, {
-                  loading: 'Downvoting Response...',
+                  loading: 'در حال ثبت...',
                   success: () => {
                     mutate<Array<Vote>>(
                       `/api/vote?chatId=${chatId}`,
@@ -152,9 +152,9 @@ export function PureMessageActions({
                       { revalidate: false },
                     );
 
-                    return 'Downvoted Response!';
+                    return 'نظر شما ثبت شد!';
                   },
-                  error: 'Failed to downvote response.',
+                  error: 'خطایی در ثبت نظر رخ داد.',
                 });
               }}
             >
@@ -164,7 +164,7 @@ export function PureMessageActions({
           <TooltipContent>پاسخ بد</TooltipContent>
         </Tooltip>
 
-        <div>{model}</div>
+        <div className="text-xs mr-2 text-muted-foreground">{model}</div>
       </div>
     </TooltipProvider>
   );
