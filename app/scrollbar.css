@@ -24,6 +24,18 @@
     height: 5px;
 }
 
+div[role=menu]::-webkit-scrollbar-track {
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px 10px rgba(138, 138, 138, 0.2);
+    border: solid 9px hsl(var(--popover));
+}
+
+div[role=menu]::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px 10px rgb(146, 146, 146);
+    border: solid 8px hsl(var(--popover));
+}
+
 .hide-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;

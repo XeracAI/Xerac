@@ -2,7 +2,6 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai';
 
 import { customMiddleware } from './custom-middleware';
-import type { Model } from "@/lib/ai/models";
 
 export interface ImageData {
   b64_json?: string;
@@ -26,7 +25,15 @@ export const customModel = (apiIdentifier: string) => {
   });
 };
 
-export const generateImage = async (prompt: string, model: Model): Promise<ImageData> => {
+export const customImageModel = (apiIdentifier: string) => {
+  return openai.image(apiIdentifier);
+  // return wrapLanguageModel({
+  //   model: openai.image(apiIdentifier),
+  //   middleware: customMiddleware,
+  // });
+};
+
+export const generateImage = async ({prompt, model}: { prompt: string, model: any }): Promise<ImageData> => {
   const response = await fetch(
     `${process.env.LITELLM_BASE_URL}/images/generations`,
     {
@@ -37,7 +44,7 @@ export const generateImage = async (prompt: string, model: Model): Promise<Image
       },
       body: JSON.stringify({
         prompt,
-        model: model.apiIdentifier,
+        model: model.modelId,
         response_format: 'url',
       }),
     }

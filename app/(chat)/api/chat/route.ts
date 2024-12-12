@@ -4,11 +4,13 @@ import {
   convertToCoreMessages,
   streamObject,
   streamText,
+  // We don't use Vercel AI SDK generateImage, because it only handles base 64 response for now
+  // experimental_generateImage as generateImage
 } from 'ai';
 import { z } from 'zod';
 
 import { auth } from '@/app/(auth)/auth';
-import { customModel, generateImage } from '@/lib/ai';
+import { customModel, customImageModel, generateImage } from '@/lib/ai';
 import { models } from '@/lib/ai/models';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {
@@ -383,7 +385,9 @@ export async function POST(request: Request) {
         data: streamingData,
       });
     case 'image':
-      const imageData = await generateImage(messages.at(-1)?.content ?? "", model);
+      const imageData = await generateImage({ prompt: messages.at(-1)?.content ?? "", model: customImageModel(model.apiIdentifier) });
+
+      // TODO save image in Minio and save file path in db
 
       try {
         await saveMessages({
