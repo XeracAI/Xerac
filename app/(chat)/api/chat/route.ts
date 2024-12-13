@@ -84,11 +84,11 @@ export async function POST(request: Request) {
     await saveChat({ id, userId: session.user.id, title });
   }
 
-  const userMessageId = generateUUID();
+  const userMessageId = new mongoose.Types.ObjectId();
 
   await saveMessages({
     messages: [
-      { ...userMessage, id: userMessageId, createdAt: new Date(), chatId: id },
+      { ...userMessage, _id: userMessageId, createdAt: new Date(), chatId: id },
     ],
   });
 
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         execute: dataStream => {
           dataStream.writeData({
             type: 'user-message-id',
-            content: userMessageId,
+            content: userMessageId.toString(),
           });
 
           const result = streamText({
