@@ -29,7 +29,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { fileName, type, size, thumbnail } = await request.json();
     const formData = await request.formData();
     const file = formData.get('file') as Blob;
 
