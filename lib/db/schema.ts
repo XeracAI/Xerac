@@ -1,9 +1,8 @@
-import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import type { InferSelectModel } from 'drizzle-orm';
 import {
   pgTable,
   varchar,
   timestamp,
-  json,
   uuid,
   text,
   primaryKey,

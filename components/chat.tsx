@@ -1,6 +1,6 @@
 'use client';
 
-import type { Attachment, Message } from 'ai';
+import type { Attachment, ChatRequestOptions, Message } from 'ai';
 import { useChat } from 'ai/react';
 import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
@@ -69,13 +69,13 @@ export function Chat({
     },
   });
 
-  const handleSubmitWrapper = () => {
+  const handleSubmitWrapper = (events?: { preventDefault?: () => void }, chatRequestOptions?: ChatRequestOptions): void => {
     const selectedModel = models.find((model) => model.id === selectedModelId)
 
     switch (selectedModel?.output) {
       case undefined:
       case 'text':
-        handleSubmit(...arguments);
+        handleSubmit(events, chatRequestOptions);
         break;
       case 'image':
         const newMessage: Message = {id: generateUUID(), role: 'user', content: input}
