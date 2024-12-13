@@ -51,7 +51,7 @@ const PurePreviewMessage = ({
 
   let model = null;
   // @ts-expect-error model is not defined in MessageAnnotation
-  const modelId = message.annotations?.find((annotation) => annotation && annotation.model)?.model;
+  const modelId = message.annotations?.find((annotation) => annotation && annotation.modelId)?.modelId;
   if (modelId) {
     model = models.find((model) => model.id === modelId);
   }

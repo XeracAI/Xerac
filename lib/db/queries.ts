@@ -12,10 +12,11 @@ import {
   document,
   type Suggestion,
   suggestion,
-  message,
   vote,
-  type MessageInsert,
 } from './schema';
+
+import { Message } from './mongoose-schema';
+import dbConnect from './connect';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -79,9 +80,9 @@ export async function updateChatById({ id, title }: { id: string; title: string 
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
+    await dbConnect();
+    await Message.deleteMany({ chatId: id });
     await db.delete(vote).where(eq(vote.chatId, id));
-    await db.delete(message).where(eq(message.chatId, id));
-
     return await db.delete(chat).where(eq(chat.id, id));
   } catch (error) {
     console.error('Failed to delete chat by id from database');
@@ -112,9 +113,10 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function saveMessages({ messages }: { messages: Array<MessageInsert> }) {
+export async function saveMessages({ messages }: { messages: Array<any> }) {
   try {
-    return await db.insert(message).values(messages);
+    await dbConnect();
+    return await Message.insertMany(messages);
   } catch (error) {
     console.error('Failed to save messages in database', error);
     throw error;
@@ -123,11 +125,8 @@ export async function saveMessages({ messages }: { messages: Array<MessageInsert
 
 export async function getMessagesByChatId({ id }: { id: string }) {
   try {
-    return await db
-      .select()
-      .from(message)
-      .where(eq(message.chatId, id))
-      .orderBy(asc(message.createdAt));
+    await dbConnect();
+    return await Message.find({ chatId: id }).sort({ createdAt: 'asc' });
   } catch (error) {
     console.error('Failed to get messages by chat id from database', error);
     throw error;
@@ -289,7 +288,8 @@ export async function getSuggestionsByDocumentId({
 
 export async function getMessageById({ id }: { id: string }) {
   try {
-    return await db.select().from(message).where(eq(message.id, id));
+    await dbConnect();
+    return await Message.findById(id);
   } catch (error) {
     console.error('Failed to get message by id from database');
     throw error;
@@ -304,11 +304,11 @@ export async function deleteMessagesByChatIdAfterTimestamp({
   timestamp: Date;
 }) {
   try {
-    return await db
-      .delete(message)
-      .where(
-        and(eq(message.chatId, chatId), gte(message.createdAt, timestamp)),
-      );
+    await dbConnect();
+    return await Message.deleteMany({
+      chatId,
+      createdAt: { $gte: timestamp },
+    });
   } catch (error) {
     console.error(
       'Failed to delete messages by id after timestamp from database',

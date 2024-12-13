@@ -8,7 +8,7 @@ import type {
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-import type { Message as DBMessage, Document } from '@/lib/db/schema';
+import type { Document } from '@/lib/db/schema';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -85,7 +85,7 @@ function addToolMessageToChat({
 }
 
 export function convertToUIMessages(
-  messages: Array<DBMessage>,
+  messages: Array<any>,
 ): Array<Message> {
   return messages.reduce((chatMessages: Array<Message>, message) => {
     if (message.role === 'tool') {
@@ -120,7 +120,7 @@ export function convertToUIMessages(
       role: message.role as Message['role'],
       content: textContent,
       toolInvocations,
-      annotations: [{model: message.model}]
+      annotations: [{modelId: message.modelId}]
     });
 
     return chatMessages;

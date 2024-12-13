@@ -29,28 +29,11 @@ export const chat = pgTable('Chat', {
 
 export type Chat = InferSelectModel<typeof chat>;
 
-export const message = pgTable('Message', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  chatId: uuid('chatId').notNull().references(() => chat.id),
-  role: varchar('role').notNull(),
-  content: json('content'),
-  images: json('images'),
-  audios: json('audios'),
-  videos: json('videos'),
-  voice: json('voice'),
-  createdAt: timestamp('createdAt').notNull(),
-
-  model: varchar('model'),
-});
-
-export type Message = InferSelectModel<typeof message>;
-export type MessageInsert = InferInsertModel<typeof message>;
-
 export const vote = pgTable(
   'Vote',
   {
     chatId: uuid('chatId').notNull().references(() => chat.id),
-    messageId: uuid('messageId').notNull().references(() => message.id),
+    messageId: varchar('messageId').notNull(),
     isUpvoted: boolean('isUpvoted').notNull(),
   },
   (table) => {
