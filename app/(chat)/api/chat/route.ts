@@ -31,6 +31,7 @@ import {
 } from '@/lib/utils';
 
 import { generateTitleFromUserMessage } from '../../chat/actions';
+import { IMessageInsert } from "@/lib/db/mongoose-schema";
 
 export const maxDuration = 60;
 
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
 
   await saveMessages({
     messages: [
-      { ...userMessage, _id: userMessageId, createdAt: new Date(), chatId: id },
+      { ...userMessage, _id: userMessageId, chatId: id },
     ],
   });
 
@@ -322,7 +323,6 @@ export async function POST(request: Request) {
                       suggestions: suggestions.map((suggestion) => ({
                         ...suggestion,
                         userId,
-                        createdAt: new Date(),
                         documentCreatedAt: document.createdAt,
                       })),
                     });
@@ -347,12 +347,11 @@ export async function POST(request: Request) {
                       (message) => {
                         const messageId = new mongoose.Types.ObjectId();
 
-                        const dbMessage: any = {
+                        const dbMessage: IMessageInsert = {
                           _id: messageId,
                           chatId: id,
                           role: message.role,
                           content: message.content,
-                          createdAt: new Date(),
                         };
 
                         if (message.role === 'assistant') {
@@ -398,7 +397,6 @@ export async function POST(request: Request) {
             role: 'assistant',
             images: [imageData],
             modelId,
-            createdAt: new Date()
           }],
         });
       } catch (error) {

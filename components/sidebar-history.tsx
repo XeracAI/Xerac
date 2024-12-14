@@ -197,6 +197,11 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const router = useRouter();
 
+  const handleDeleteClick = (chatId: string) => {
+    setDeleteId(chatId);
+    setShowDeleteDialog(true);
+  }
+
   const handleDelete = async () => {
     const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
       method: 'DELETE',
@@ -329,10 +334,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
-                            onDelete={(chatId) => {
-                              setDeleteId(chatId);
-                              setShowDeleteDialog(true);
-                            }}
+                            onDelete={handleDeleteClick}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -349,10 +351,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
-                            onDelete={(chatId) => {
-                              setDeleteId(chatId);
-                              setShowDeleteDialog(true);
-                            }}
+                            onDelete={handleDeleteClick}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -369,10 +368,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
-                            onDelete={(chatId) => {
-                              setDeleteId(chatId);
-                              setShowDeleteDialog(true);
-                            }}
+                            onDelete={handleDeleteClick}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -389,10 +385,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
-                            onDelete={(chatId) => {
-                              setDeleteId(chatId);
-                              setShowDeleteDialog(true);
-                            }}
+                            onDelete={handleDeleteClick}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -409,10 +402,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
-                            onDelete={(chatId) => {
-                              setDeleteId(chatId);
-                              setShowDeleteDialog(true);
-                            }}
+                            onDelete={handleDeleteClick}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -424,6 +414,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

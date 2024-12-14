@@ -1,4 +1,4 @@
-import type { InferSelectModel } from 'drizzle-orm';
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import {
   pgTable,
   varchar,
@@ -11,7 +11,8 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  id: uuid().primaryKey().notNull().defaultRandom(),
+
   email: varchar('email', { length: 64 }).notNull(),
   password: varchar('password', { length: 64 }),
 });
@@ -19,11 +20,14 @@ export const user = pgTable('User', {
 export type User = InferSelectModel<typeof user>;
 
 export const chat = pgTable('Chat', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp('createdAt').notNull(),
-  title: text('title').notNull(),
+  id: uuid().primaryKey().notNull().defaultRandom(),
+
   userId: uuid('userId').notNull().references(() => user.id),
+
+  title: text().notNull(),
   visibility: varchar('visibility', { enum: ['public', 'private'] }).notNull().default('private'),
+
+  createdAt: timestamp('createdAt').defaultNow().notNull(),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -32,8 +36,10 @@ export const vote = pgTable(
   'Vote',
   {
     chatId: uuid('chatId').notNull().references(() => chat.id),
-    messageId: varchar('messageId').notNull(),
+    messageId: varchar('messageId', { length: 24 }).notNull(),
     isUpvoted: boolean('isUpvoted').notNull(),
+
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
   },
   (table) => {
     return {
@@ -47,11 +53,14 @@ export type Vote = InferSelectModel<typeof vote>;
 export const document = pgTable(
   'Document',
   {
-    id: uuid('id').notNull().defaultRandom(),
-    createdAt: timestamp('createdAt').notNull(),
+    id: uuid().notNull().defaultRandom(),
+
+    userId: uuid('userId').notNull().references(() => user.id),
+
     title: text('title').notNull(),
     content: text('content'),
-    userId: uuid('userId').notNull().references(() => user.id),
+
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
   },
   (table) => {
     return {
@@ -65,15 +74,18 @@ export type Document = InferSelectModel<typeof document>;
 export const suggestion = pgTable(
   'Suggestion',
   {
-    id: uuid('id').notNull().defaultRandom(),
+    id: uuid().notNull().defaultRandom(),
+
+    userId: uuid('userId').notNull().references(() => user.id),
+
     documentId: uuid('documentId').notNull(),
     documentCreatedAt: timestamp('documentCreatedAt').notNull(),
     originalText: text('originalText').notNull(),
     suggestedText: text('suggestedText').notNull(),
-    description: text('description'),
+    description: text(),
     isResolved: boolean('isResolved').notNull().default(false),
-    userId: uuid('userId').notNull().references(() => user.id),
-    createdAt: timestamp('createdAt').notNull(),
+
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id] }),
@@ -85,3 +97,4 @@ export const suggestion = pgTable(
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+export type SuggestionInsert = InferInsertModel<typeof suggestion>;

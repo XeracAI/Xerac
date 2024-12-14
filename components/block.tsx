@@ -154,7 +154,6 @@ function PureBlock({
             const newDocument = {
               ...currentDocument,
               content: updatedContent,
-              createdAt: new Date(),
             };
 
             return [...currentDocuments, newDocument];

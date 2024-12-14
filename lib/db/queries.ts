@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { genSaltSync, hashSync } from 'bcrypt-ts';
-import { and, asc, desc, eq, gt, gte } from 'drizzle-orm';
+import { and, asc, desc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
@@ -10,12 +10,12 @@ import {
   chat,
   type User,
   document,
-  type Suggestion,
+  type SuggestionInsert,
   suggestion,
   vote,
 } from './schema';
 
-import { Message } from './mongoose-schema';
+import { IMessageInsert, Message } from './mongoose-schema';
 import dbConnect from './connect';
 
 // Optionally, if not using email/pass login, you can
@@ -113,7 +113,7 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function saveMessages({ messages }: { messages: Array<any> }) {
+export async function saveMessages({ messages }: { messages: Array<IMessageInsert> }) {
   try {
     await dbConnect();
     return await Message.insertMany(messages);
@@ -258,7 +258,7 @@ export async function deleteDocumentsByIdAfterTimestamp({
 export async function saveSuggestions({
   suggestions,
 }: {
-  suggestions: Array<Suggestion>;
+  suggestions: Array<SuggestionInsert>;
 }) {
   try {
     return await db.insert(suggestion).values(suggestions);
