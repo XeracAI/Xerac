@@ -18,7 +18,7 @@ export const buildDocumentFromContent = (content: string) => {
   tempContainer.innerHTML = stringFromMarkdown
 
   // Process paragraphs, headings, and list items to add direction style
-  tempContainer.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li').forEach((element) => {
+  tempContainer.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, pre, code').forEach((element) => {
     const text = element.textContent || ''
     if (checkEnglishString(text)) {
       element.setAttribute('style', 'direction: ltr; text-align: left')

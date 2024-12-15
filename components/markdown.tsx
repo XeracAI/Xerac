@@ -6,99 +6,104 @@ import remarkGfm from 'remark-gfm'
 
 const NonMemoizedMarkdown = ({children}: {children: string}) => {
   const components: Partial<Components> = {
-    code: ({node, inline, className, children, ...props}) => {
+    code: ({inline, className, children, ...props}) => {
       const match = /language-(\w+)/.exec(className || '')
       return !inline && match ? (
         <pre
           {...props}
+          style={{direction: 'ltr'}}
           className={`${className} text-sm w-[80dvw] md:max-w-[500px] overflow-x-scroll bg-zinc-100 p-3 rounded-lg mt-2 dark:bg-zinc-800`}
         >
           <code className={match[1]}>{children}</code>
         </pre>
       ) : (
-        <code className={`${className} text-sm bg-zinc-100 dark:bg-zinc-800 py-0.5 px-1 rounded-md`} {...props}>
+        <code
+          {...props}
+          style={{direction: 'ltr'}}
+          className={`${className} text-sm bg-zinc-100 dark:bg-zinc-800 py-0.5 px-1 rounded-md`}
+        >
           {children}
         </code>
       )
     },
-    ol: ({node, children, ...props}) => {
+    ol: ({children, ...props}) => {
       return (
         <ol className="list-decimal list-outside ml-4" {...props}>
           {children}
         </ol>
       )
     },
-    li: ({node, children, ...props}) => {
+    li: ({children, ...props}) => {
       return (
         <li className="py-1" {...props}>
           {children}
         </li>
       )
     },
-    ul: ({node, children, ...props}) => {
+    ul: ({children, ...props}) => {
       return (
         <ul className="list-decimal list-outside ml-4" {...props}>
           {children}
         </ul>
       )
     },
-    strong: ({node, children, ...props}) => {
+    strong: ({children, ...props}) => {
       return (
         <span className="font-semibold" {...props}>
           {children}
         </span>
       )
     },
-    a: ({node, children, ...props}) => {
+    a: ({children, ...props}) => {
       return (
         <Link className="text-blue-500 hover:underline" target="_blank" rel="noreferrer" {...props}>
           {children}
         </Link>
       )
     },
-    h1: ({node, children, ...props}) => {
+    h1: ({children, ...props}) => {
       return (
         <h1 className="text-3xl font-semibold mt-6 mb-2" {...props}>
           {children}
         </h1>
       )
     },
-    h2: ({node, children, ...props}) => {
+    h2: ({children, ...props}) => {
       return (
         <h2 className="text-2xl font-semibold mt-6 mb-2" {...props}>
           {children}
         </h2>
       )
     },
-    h3: ({node, children, ...props}) => {
+    h3: ({children, ...props}) => {
       return (
         <h3 className="text-xl font-semibold mt-6 mb-2" {...props}>
           {children}
         </h3>
       )
     },
-    h4: ({node, children, ...props}) => {
+    h4: ({children, ...props}) => {
       return (
         <h4 className="text-lg font-semibold mt-6 mb-2" {...props}>
           {children}
         </h4>
       )
     },
-    h5: ({node, children, ...props}) => {
+    h5: ({children, ...props}) => {
       return (
         <h5 className="text-base font-semibold mt-6 mb-2" {...props}>
           {children}
         </h5>
       )
     },
-    h6: ({node, children, ...props}) => {
+    h6: ({children, ...props}) => {
       return (
         <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
           {children}
         </h6>
       )
     },
-    p: ({node, children, ...props}) => {
+    p: ({children, ...props}) => {
       return (
         <p style={{direction: typeof children === 'string' && checkEnglishString(children) ? 'ltr' : 'rtl'}} {...props}>
           {children}

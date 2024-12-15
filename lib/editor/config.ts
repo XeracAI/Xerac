@@ -76,6 +76,21 @@ export const documentSchema = new Schema({
         })
       }],
       toDOM: (node) => ['li', { style: node.attrs.style || '' }, 0]
+    })
+    .update('code_block', {
+      content: 'text*',
+      marks: '',
+      group: 'block',
+      code: true,
+      attrs: { style: { default: 'direction: ltr; text-align: left' } },
+      parseDOM: [{
+        tag: 'pre',
+        preserveWhitespace: 'full',
+        getAttrs: (dom) => ({
+          style: (dom as HTMLElement).getAttribute('style') || 'direction: ltr; text-align: left'
+        })
+      }],
+      toDOM: (node) => ['pre', { style: node.attrs.style || 'direction: ltr; text-align: left' }, ['code', 0]]
     }),
   marks: schema.spec.marks,
 });
