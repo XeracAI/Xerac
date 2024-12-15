@@ -48,6 +48,18 @@ div[data-sidebar=content]::-webkit-scrollbar-thumb {
     border: solid 8px hsl(var(--sidebar-background));
 }
 
+div.prose::-webkit-scrollbar-track {
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px 10px rgba(138, 138, 138, 0.2);
+    border: solid 9px hsl(var(--muted));
+}
+
+div.prose::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px 10px rgb(146, 146, 146);
+    border: solid 8px hsl(var(--muted));
+}
+
 .hide-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;

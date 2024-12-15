@@ -299,7 +299,7 @@ function PureBlock({
       )}
 
       <motion.div
-        className="fixed dark:bg-muted bg-background h-dvh flex flex-col shadow-xl overflow-y-scroll"
+        className="fixed dark:bg-muted bg-background h-dvh flex flex-col shadow-xl"
         initial={
           isMobile
             ? {
