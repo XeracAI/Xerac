@@ -4,11 +4,11 @@ import type { Attachment, ChatRequestOptions, Message } from 'ai';
 import { useChat } from 'ai/react';
 import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 
 import { ChatHeader } from '@/components/chat-header';
-import type { Vote } from '@/lib/db/schema';
+import type { Vote, Chat } from '@/lib/db/schema';
 import { fetcher, generateUUID } from '@/lib/utils';
 
 import { Block, type UIBlock } from './block';
@@ -18,6 +18,7 @@ import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
 import { models } from "@/lib/ai/models";
 import type { ImageData } from "@/lib/ai";
+import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
 
 export function Chat({
   id,
@@ -32,7 +33,12 @@ export function Chat({
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
-  const { mutate } = useSWRConfig();
+  const { fetchAndUpdateChat } = useChatHistoryCache();
+
+  const { data: currentChat, mutate: mutateChat } = useSWR<Chat>(
+    `/api/chat?id=${id}`,
+    fetcher
+  );
 
   const {
     messages,
@@ -49,7 +55,10 @@ export function Chat({
     id,
     body: { id, modelId: selectedModelId },
     initialMessages,
-    onFinish: () => mutate('/api/history'),
+    onFinish: async () => {
+      await fetchAndUpdateChat(id);
+      await mutateChat();
+    },
   });
 
   const { width: windowWidth = 1920, height: windowHeight = 1080 } = useWindowSize();
@@ -135,6 +144,7 @@ export function Chat({
       <div className="flex flex-col min-w-0 h-dvh bg-background">
         <ChatHeader
           chatId={id}
+          chat={currentChat}
           selectedModelId={selectedModelId}
           selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}

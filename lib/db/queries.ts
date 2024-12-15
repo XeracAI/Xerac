@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { genSaltSync, hashSync } from 'bcrypt-ts';
-import { and, asc, desc, eq, gt } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
@@ -90,13 +90,36 @@ export async function deleteChatById({ id }: { id: string }) {
   }
 }
 
-export async function getChatsByUserId({ id }: { id: string }) {
+export async function getChatsByUserId({ 
+  id, 
+  cursor, 
+  limit 
+}: { 
+  id: string;
+  cursor?: Date;
+  limit: number;
+}) {
   try {
-    return await db
-      .select()
-      .from(chat)
-      .where(eq(chat.userId, id))
-      .orderBy(desc(chat.createdAt));
+    const query = cursor
+      ? db
+          .select()
+          .from(chat)
+          .where(
+            and(
+              eq(chat.userId, id),
+              lt(chat.createdAt, cursor)
+            )
+          )
+          .orderBy(desc(chat.createdAt))
+          .limit(limit)
+      : db
+          .select()
+          .from(chat)
+          .where(eq(chat.userId, id))
+          .orderBy(desc(chat.createdAt))
+          .limit(limit);
+
+    return await query;
   } catch (error) {
     console.error('Failed to get chats by user from database');
     throw error;

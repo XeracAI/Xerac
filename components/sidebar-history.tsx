@@ -2,11 +2,12 @@
 
 import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
 import Link from 'next/link';
-import { useParams, usePathname, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { User } from 'next-auth';
-import { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
-import useSWR from 'swr';
+import useSWRInfinite from 'swr/infinite';
+import { useIntersection } from '@mantine/hooks';
 
 import {
   CheckCircleFillIcon,
@@ -50,6 +51,7 @@ import { Check, X } from 'lucide-react';
 import type { Chat } from '@/lib/db/schema';
 import { fetcher } from '@/lib/utils';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
+import { PaginatedResponse } from "@/hooks/use-chat-history-cache";
 
 type GroupedChats = {
   today: Chat[];
@@ -180,18 +182,42 @@ export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => prevProps.i
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const { id } = useParams();
-  const pathname = usePathname();
+
+  const getKey = (pageIndex: number, previousPageData: PaginatedResponse | null) => {
+    if (!user) return null;
+    
+    if (previousPageData && !previousPageData.nextCursor) return null;
+
+    if (pageIndex === 0) return '/api/history';
+
+    return `/api/history?cursor=${previousPageData?.nextCursor}`;
+  };
+
   const {
-    data: history,
+    data: pages,
     isLoading,
+    setSize,
     mutate,
-  } = useSWR<Array<Chat>>(user ? '/api/history' : null, fetcher, {
-    fallbackData: [],
+  } = useSWRInfinite<PaginatedResponse>(getKey, fetcher, {
+    revalidateFirstPage: true,
+    revalidateOnFocus: true,
+    dedupingInterval: 0,
+    persistSize: true
+  });
+
+  const lastChatRef = useRef<HTMLDivElement>(null);
+  const { ref, entry } = useIntersection({
+    root: lastChatRef.current,
+    threshold: 1,
   });
 
   useEffect(() => {
-    mutate();
-  }, [pathname, mutate]);
+    if (entry?.isIntersecting) {
+      setSize((size) => size + 1);
+    }
+  }, [entry, setSize]);
+
+  const history = pages?.flatMap(page => page.items) ?? [];
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -210,11 +236,17 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     toast.promise(deletePromise, {
       loading: 'در حال پاک کردن مکالمه...',
       success: () => {
-        mutate((history) => {
-          if (history) {
-            return history.filter((h) => h.id !== id);
-          }
+        mutate((pages) => {
+          if (!pages) return pages;
+          
+          return pages.map(page => ({
+            ...page,
+            items: page.items.filter(chat => chat.id !== deleteId)
+          }));
+        }, {
+          revalidate: false // Don't revalidate as we've already updated the cache
         });
+        
         return 'مکالمه پاک شد';
       },
       error: 'پاک کردن مکالمه با مشکل مواجه شد',
@@ -408,6 +440,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         ))}
                       </>
                     )}
+
+                    <div ref={ref} className="h-1" />
                   </>
                 );
               })()}

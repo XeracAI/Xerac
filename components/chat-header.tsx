@@ -12,16 +12,17 @@ import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { VisibilityType, VisibilitySelector } from './visibility-selector';
 import {useTheme} from "next-themes";
-import { Chat } from "@/lib/db/schema";
-import { useSWRConfig } from "swr";
+import type { Chat } from "@/lib/db/schema";
 
 function PureChatHeader({
   chatId,
+  chat,
   selectedModelId,
   selectedVisibilityType,
   isReadonly,
 }: {
   chatId: string;
+  chat: Chat | undefined;
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
@@ -31,13 +32,6 @@ function PureChatHeader({
   const { setTheme, theme } = useTheme();
 
   const { width: windowWidth } = useWindowSize();
-
-  let title = "چت جدید";
-  const { cache } = useSWRConfig();
-  const history: Array<Chat> = cache.get('/api/history')?.data;
-  if (history) {
-    title = history.find((chat) => chat.id === chatId)?.title || "چت جدید";
-  }
 
   return (
     <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">
@@ -74,7 +68,7 @@ function PureChatHeader({
         />
       )}
 
-      <div className="order-4 mx-auto">{title}</div>
+      <div className="order-4 mx-auto">{chat?.title || "چت جدید"}</div>
 
       <button className="hidden md:flex py-1.5 px-2 h-fit md:h-[34px] order-5 md:mr-auto theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="size-6">
@@ -85,4 +79,7 @@ function PureChatHeader({
   );
 }
 
-export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => prevProps.selectedModelId === nextProps.selectedModelId);
+export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
+  if (prevProps.selectedModelId !== nextProps.selectedModelId) return false;
+  return !(prevProps.chat !== undefined && nextProps.chat !== undefined && prevProps.chat.title !== nextProps.chat.title);
+});
