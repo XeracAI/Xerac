@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
 
-import type { Vote } from '@/lib/db/schema';
+import type { Vote, VoteInsert } from '@/lib/db/schema';
 import { getMessageIdFromAnnotations } from '@/lib/utils';
 
 import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';
@@ -31,7 +31,7 @@ export function PureMessageActions({
   isLoading: boolean;
 }) {
   const { mutate } = useSWRConfig();
-  const [_, copyToClipboard] = useCopyToClipboard();
+  const [, copyToClipboard] = useCopyToClipboard();
 
   if (isLoading) return null;
   if (message.role === 'user') return null;
@@ -77,7 +77,7 @@ export function PureMessageActions({
                 toast.promise(upvote, {
                   loading: 'در حال ثبت...',
                   success: () => {
-                    mutate<Array<Vote>>(
+                    mutate<Array<VoteInsert>>(
                       `/api/vote?chatId=${chatId}`,
                       (currentVotes) => {
                         if (!currentVotes) return [];
@@ -131,7 +131,7 @@ export function PureMessageActions({
                 toast.promise(downvote, {
                   loading: 'در حال ثبت...',
                   success: () => {
-                    mutate<Array<Vote>>(
+                    mutate<Array<VoteInsert>>(
                       `/api/vote?chatId=${chatId}`,
                       (currentVotes) => {
                         if (!currentVotes) return [];
@@ -174,8 +174,6 @@ export const MessageActions = memo(
   PureMessageActions,
   (prevProps, nextProps) => {
     if (!equal(prevProps.vote, nextProps.vote)) return false;
-    if (prevProps.isLoading !== nextProps.isLoading) return false;
-
-    return true;
+    return prevProps.isLoading === nextProps.isLoading;
   },
 );

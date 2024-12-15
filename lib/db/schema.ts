@@ -49,6 +49,7 @@ export const vote = pgTable(
 );
 
 export type Vote = InferSelectModel<typeof vote>;
+export type VoteInsert = InferInsertModel<typeof vote>;
 
 export const document = pgTable(
   'Document',
