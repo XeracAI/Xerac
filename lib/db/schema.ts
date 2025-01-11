@@ -7,17 +7,41 @@ import {
   text,
   primaryKey,
   foreignKey,
+  smallint,
   boolean,
+  uniqueIndex,
+  AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
   id: uuid().primaryKey().notNull().defaultRandom(),
 
-  email: varchar('email', { length: 64 }).notNull(),
-  password: varchar('password', { length: 64 }),
-});
+  email: varchar('email', { length: 64 }),
 
-export type User = InferSelectModel<typeof user>;
+  phoneNumber: varchar('phoneNumber', { length: 15 }).notNull(),
+  countryCode: varchar('countryCode', { length: 4 }).notNull(),
+  isPhoneNumberVerified: boolean('isPhoneNumberVerified').notNull().default(false),
+
+  otp: varchar('otp', {length: 5}),
+  lastSMSSent: timestamp('lastSMSSent'),
+  otpExpires: timestamp('otpExpires'),
+  failedTries: smallint('failedTries').notNull().default(0),
+  lockedUntil: timestamp('lockedUntil'),
+
+  password: varchar('password', { length: 64 }),
+
+  firstName: varchar('firstName', { length: 50 }),
+  lastName: varchar('lastName', { length: 50 }),
+
+  referralCode: varchar('referralCode', { length: 10 }).unique(),
+  referrer: uuid().references((): AnyPgColumn => user.id),
+  referrerDiscountUsed: boolean('referrerDiscountUsed').notNull().default(false),
+}, (table) => ({
+  phoneUnique: uniqueIndex('phone_unique_idx').on(table.phoneNumber, table.countryCode),
+}));
+
+export type UserWithAllFields = InferSelectModel<typeof user>;
+export type User = Omit<Omit<UserWithAllFields, 'password'>, 'otp'>;
 
 export const chat = pgTable('Chat', {
   id: uuid().primaryKey().notNull().defaultRandom(),

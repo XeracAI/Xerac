@@ -22,6 +22,7 @@ export default async function Page() {
       selectedModelId={selectedModelId}
       selectedVisibilityType="private"
       isReadonly={false}
+      isNewConversation={true}
     />
   );
 }

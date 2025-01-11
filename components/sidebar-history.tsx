@@ -16,6 +16,8 @@ import {
   MoreHorizontalIcon,
   ShareIcon,
   TrashIcon,
+  PenIcon,
+  LoaderIcon,
 } from '@/components/icons';
 import {
   AlertDialog,
@@ -49,9 +51,10 @@ import {
 } from '@/components/ui/sidebar';
 import { Check, X } from 'lucide-react';
 import type { Chat } from '@/lib/db/schema';
-import { fetcher } from '@/lib/utils';
+import { checkEnglishString, fetcher } from '@/lib/utils';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { PaginatedResponse } from "@/hooks/use-chat-history-cache";
+import { BetterTooltip } from './ui/tooltip';
 
 type GroupedChats = {
   today: Chat[];
@@ -64,12 +67,16 @@ type GroupedChats = {
 const PureChatItem = ({
   chat,
   isActive,
+  isLoading,
   onDelete,
+  onEdit,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
+  isLoading: boolean;
   onDelete: (chatId: string) => void;
+  onEdit: (chatId: string, title: string) => Promise<void>;
   setOpenMobile: (open: boolean) => void;
 }) => {
   const { visibilityType, setVisibilityType } = useChatVisibility({
@@ -79,8 +86,22 @@ const PureChatItem = ({
   const [editMode, setEditMode] = useState(false);
   const [inputValue, setInputValue] = useState(chat.title || "");
 
+  const editTitle = () => {
+    onEdit(chat.id, inputValue).then(() => setEditMode(false));
+  };
+
   return (
     <SidebarMenuItem>
+      {
+       isLoading && (
+          <div className="flex size-full rounded-md bg-black absolute items-center justify-center opacity-80">
+            <div className="animate-spin">
+              <LoaderIcon />
+            </div>
+          </div>
+        )
+      }
+
       {
         editMode ? (
           <div className="flex items-center h-[32px] w-4/5">
@@ -89,15 +110,24 @@ const PureChatItem = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               className="w-full p-1 rounded-md"
+              style={{ direction: checkEnglishString(inputValue) ? "ltr" : "rtl" }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  editTitle();
+                }
+              }}
             />
-            <Check className="absolute top-1 left-8" height={20} width={20} />
+            <Check onClick={editTitle} className="absolute top-1 left-8 cursor-pointer" height={20} width={20} />
           </div>
         ) : (
-          <SidebarMenuButton asChild isActive={isActive}>
-            <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-              <span>{chat.title}</span>
-            </Link>
-          </SidebarMenuButton>
+          <BetterTooltip content={chat.title} align="start">
+            <SidebarMenuButton asChild isActive={isActive}>
+              <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
+                <span>{chat.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </BetterTooltip>
         )
       }
 
@@ -160,7 +190,7 @@ const PureChatItem = ({
                 className="cursor-pointer"
                 onSelect={() => setEditMode(true)}
               >
-                <TrashIcon />
+                <PenIcon />
                 <span>ویرایش</span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -177,15 +207,17 @@ const PureChatItem = ({
   );
 };
 
-export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => prevProps.isActive === nextProps.isActive);
+export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => prevProps.isActive === nextProps.isActive && prevProps.isLoading === nextProps.isLoading && prevProps.chat.title === nextProps.chat.title);
 
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const { id } = useParams();
 
+  const [loadingChatId, setLoadingChatId] = useState<string | null>(null);
+
   const getKey = (pageIndex: number, previousPageData: PaginatedResponse | null) => {
     if (!user) return null;
-    
+
     if (previousPageData && !previousPageData.nextCursor) return null;
 
     if (pageIndex === 0) return '/api/history';
@@ -229,6 +261,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   }
 
   const handleDelete = async () => {
+    setLoadingChatId(deleteId);
+
     const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
       method: 'DELETE',
     });
@@ -238,7 +272,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
       success: () => {
         mutate((pages) => {
           if (!pages) return pages;
-          
+
           return pages.map(page => ({
             ...page,
             items: page.items.filter(chat => chat.id !== deleteId)
@@ -246,17 +280,48 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
         }, {
           revalidate: false // Don't revalidate as we've already updated the cache
         });
-        
+
         return 'مکالمه پاک شد';
       },
       error: 'پاک کردن مکالمه با مشکل مواجه شد',
+      finally: () => setLoadingChatId(null),
     });
 
     setShowDeleteDialog(false);
 
     if (deleteId === id) {
-      router.push('/');
+      router.push('/chat');
     }
+  };
+
+  const handleEdit = async (id: string, title: string) => {
+    setLoadingChatId(id);
+
+    const editPromise = fetch(`/api/chat?id=${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({title}),
+    });
+
+    toast.promise(editPromise, {
+      loading: 'در حال ویرایش عنوان مکالمه...',
+      success: () => {
+        mutate((pages) => {
+          if (!pages) return pages;
+
+          return pages.map(page => ({
+            ...page,
+            items: page.items.map(chat => chat.id === id ? {...chat, title} : chat)
+          }));
+        }, {
+          revalidate: false // Don't revalidate as we've already updated the cache
+        });
+
+        return 'عنوان مکالمه ویرایش شد';
+      },
+      error: 'ویرایش عنوان مکالمه با مشکل مواجه شد',
+      finally: () => setLoadingChatId(null),
+    });
   };
 
   if (!user) {
@@ -366,7 +431,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
+                            isLoading={chat.id === loadingChatId}
                             onDelete={handleDeleteClick}
+                            onEdit={handleEdit}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -383,7 +450,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
+                            isLoading={chat.id === loadingChatId}
                             onDelete={handleDeleteClick}
+                            onEdit={handleEdit}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -400,7 +469,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
+                            isLoading={chat.id === loadingChatId}
                             onDelete={handleDeleteClick}
+                            onEdit={handleEdit}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -417,7 +488,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
+                            isLoading={chat.id === loadingChatId}
                             onDelete={handleDeleteClick}
+                            onEdit={handleEdit}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -434,7 +507,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                             key={chat.id}
                             chat={chat}
                             isActive={chat.id === id}
+                            isLoading={chat.id === loadingChatId}
                             onDelete={handleDeleteClick}
+                            onEdit={handleEdit}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
