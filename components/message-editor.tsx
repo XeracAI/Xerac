@@ -1,32 +1,23 @@
 'use client';
 
-import { ChatRequestOptions, Message } from 'ai';
+import { Message } from 'ai';
 import { Button } from './ui/button';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Textarea } from './ui/textarea';
-import { deleteTrailingMessages } from '@/app/(chat)/chat/actions';
 import { toast } from 'sonner';
-import { useUserMessageId } from '@/hooks/use-user-message-id';
 import { checkEnglishString } from "@/lib/utils";
 
 export type MessageEditorProps = {
   message: Message;
   setMode: Dispatch<SetStateAction<'view' | 'edit'>>;
-  setMessages: (
-    messages: Message[] | ((messages: Message[]) => Message[]),
-  ) => void;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions,
-  ) => Promise<string | null | undefined>;
+  editMessage: (messageId: string, newContent: string) => void;
 };
 
 export function MessageEditor({
   message,
   setMode,
-  setMessages,
-  reload,
+  editMessage,
 }: MessageEditorProps) {
-  const { userMessageIdFromServer } = useUserMessageId();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const [draftContent, setDraftContent] = useState<string>(message.content);
@@ -67,7 +58,7 @@ export function MessageEditor({
           disabled={isSubmitting}
           onClick={async () => {
             setIsSubmitting(true);
-            const messageId = userMessageIdFromServer ?? message.id;
+            const messageId = message.serverId ?? message.id;
 
             if (!messageId) {
               toast.error('Something went wrong, please try again!');
@@ -75,31 +66,14 @@ export function MessageEditor({
               return;
             }
 
-            await deleteTrailingMessages({
-              id: messageId,
-            });
-
-            setMessages((messages) => {
-              const index = messages.findIndex((m) => m.id === message.id);
-
-              if (index !== -1) {
-                const updatedMessage = {
-                  ...message,
-                  content: draftContent,
-                };
-
-                return [...messages.slice(0, index), updatedMessage];
-              }
-
-              return messages;
-            });
+            editMessage(messageId, draftContent);
 
             setMode('view');
-            await reload();
           }}
         >
           {isSubmitting ? 'در حال ارسال...' : 'ارسال'}
         </Button>
+
         <Button
           variant="outline"
           className="h-fit py-2 px-3"

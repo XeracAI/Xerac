@@ -4,6 +4,7 @@ import {
   convertToCoreMessages,
   streamObject,
   streamText,
+  CoreUserMessage,
   // We don't use Vercel AI SDK generateImage, because it only handles base 64 response for now
   // experimental_generateImage as generateImage
 } from 'ai';
@@ -15,9 +16,11 @@ import { customModel, customImageModel, generateImage } from '@/lib/ai';
 import { models } from '@/lib/ai/models';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {
+  addChildToMessage,
   deleteChatById,
   getChatById,
   getDocumentById,
+  getMessagesByChatId,
   saveChat,
   saveDocument,
   saveMessages,
@@ -26,12 +29,12 @@ import {
 import type { Suggestion } from '@/lib/db/schema';
 import {
   generateUUID,
-  getMostRecentUserMessage,
   sanitizeResponseMessages,
 } from '@/lib/utils';
 
 import { generateTitleFromUserMessage } from '../../chat/actions';
 import { IMessageInsert } from "@/lib/db/mongoose-schema";
+import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 
 export const maxDuration = 60;
 
@@ -88,42 +91,97 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const {
     id,
-    messages,
+    message,
     modelId,
-  }: { id: string; messages: Array<Message>; modelId: string } =
-    await request.json();
+    siblingId,
+    parentId,
+  }: { id: string; message: Message; modelId: string; siblingId: string | undefined; parentId: string | undefined } = await request.json();
 
   const session = await auth();
 
   if (!session || !session.user || !session.user.id) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response('Unauthorized!', { status: 401 });
+  }
+
+  if (id === undefined) {
+    return new Response('"id" is a required field!', { status: 400 });
+  } else {
+    // TODO check if it's a valid UUID
+  }
+  if (message === undefined) {
+    return new Response('"message" is a required field!', { status: 400 });
+  }
+  if (modelId === undefined) {
+    return new Response('"modelId" is a required field!', { status: 400 });
   }
 
   const model = models.find((model) => model.id === modelId);
 
   if (!model) {
-    return new Response('Model not found', { status: 404 });
+    return new Response('Model not found!', { status: 404 });
   }
 
-  const coreMessages = convertToCoreMessages(messages);
-  const userMessage = getMostRecentUserMessage(coreMessages);
-
-  if (!userMessage) {
-    return new Response('No user message found', { status: 400 });
+  if (message.role === undefined || message.content === undefined) {
+    return new Response('No role or content found in the message!', { status: 400 });
   }
+  if (message.role !== 'user') {
+    return new Response('Must provide a user message!', { status: 400 });
+  }
+
+  const userCoreMessage = convertToCoreMessages([message]).at(-1) as CoreUserMessage
 
   const chat = await getChatById({ id });
 
-  if (!chat) {
-    const title = await generateTitleFromUserMessage({ message: userMessage });
-    await saveChat({ id, userId: session.user.id, title });
-  }
-
   const userMessageId = new mongoose.Types.ObjectId();
+
+  let coreMessages, parent;
+  if (!chat) {
+    const title = await generateTitleFromUserMessage({ message: userCoreMessage });
+    // TODO generate chat ID (UUID) on server
+    await saveChat({ id, userId: session.user.id, title });
+    coreMessages = [userCoreMessage];
+  } else {
+    const dbMessages = await getMessagesByChatId({ id });
+    if (dbMessages.length === 0) { // An empty chat should never exist but just in case
+      coreMessages = [userCoreMessage];
+    } else {
+      if (mongoose.isValidObjectId(siblingId)) {
+        const leaf = dbMessages.find((dbM) => dbM._id.equals(siblingId));
+        if (leaf === undefined) {
+          return new Response('Invalid message ID to edit!', { status: 400 });
+        }
+
+        const branch = constructBranchUntilDBMessage(leaf, dbMessages);
+        parent = leaf.parent;
+        // @ts-expect-error Field "role" in type IMessage is not compatible to type UIMessage
+        coreMessages = [...convertToCoreMessages(branch), userCoreMessage];
+      } else {
+        if (parentId === undefined) {
+          return new Response('Must provide a valid parent message ID for non-empty chats!', { status: 400 });
+        } else if (!mongoose.isValidObjectId(parentId)) {
+          return new Response('Invalid parent message ID!', { status: 400 });
+        }
+
+        parent = dbMessages.find((m) => m._id.equals(parentId))
+        if (parent === undefined) {
+          return new Response('Parent message not found!', { status: 400 });
+        }
+
+        const branch = constructBranchFromDBMessages(parent, dbMessages);
+        // @ts-expect-error Field "role" in type IMessage is not compatible to type UIMessage
+        coreMessages = [...convertToCoreMessages(branch), userCoreMessage];
+        parent = parent._id;
+      }
+
+      if (parent) {
+        addChildToMessage(parent, userMessageId); // TODO catch error
+      }
+    }
+  }
 
   await saveMessages({
     messages: [
-      { ...userMessage, _id: userMessageId, chatId: id },
+      { ...userCoreMessage, _id: userMessageId, chatId: id, parent, children: [] },
     ],
   });
 
@@ -376,6 +434,7 @@ export async function POST(request: Request) {
                   const responseMessagesWithoutIncompleteToolCalls =
                     sanitizeResponseMessages(response.messages);
 
+                  let previousMessageId = userMessageId
                   await saveMessages({
                     messages: responseMessagesWithoutIncompleteToolCalls.map(
                       (message) => {
@@ -386,6 +445,8 @@ export async function POST(request: Request) {
                           chatId: id,
                           role: message.role,
                           content: message.content,
+                          parent: previousMessageId,
+                          children: [],
                         };
 
                         if (message.role === 'assistant') {
@@ -395,6 +456,9 @@ export async function POST(request: Request) {
                           dataStream.writeMessageAnnotation({ modelId });
                           dbMessage.modelId = modelId;
                         }
+
+                        addChildToMessage(previousMessageId, messageId)
+                        previousMessageId = messageId
 
                         return dbMessage;
                       },
@@ -420,7 +484,7 @@ export async function POST(request: Request) {
         },
       });
     case 'image':
-      const imageData = await generateImage({ prompt: messages.at(-1)?.content ?? "", model: customImageModel(model.apiIdentifier) });
+      const imageData = await generateImage({ prompt: message.content, model: customImageModel(model.apiIdentifier) });
 
       // TODO save image in Minio and save file path in db
 
@@ -431,6 +495,8 @@ export async function POST(request: Request) {
             role: 'assistant',
             images: [imageData],
             modelId,
+            parent: userMessageId,
+            children: [],
           }],
         });
       } catch (error) {
@@ -468,7 +534,7 @@ export async function PATCH(request: Request) {
 
     return new Response('Chat updated', { status: 200 });
   } catch (error) {
-    return new Response('An error occurred while processing your request', {
+    return new Response(`An error occurred while processing your request: ${error}`, {
       status: 500,
     });
   }
@@ -499,7 +565,7 @@ export async function DELETE(request: Request) {
 
     return new Response('Chat deleted', { status: 200 });
   } catch (error) {
-    return new Response('An error occurred while processing your request', {
+    return new Response(`An error occurred while processing your request: ${error}`, {
       status: 500,
     });
   }

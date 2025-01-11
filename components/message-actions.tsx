@@ -63,7 +63,8 @@ export function PureMessageActions({
               disabled={vote?.isUpvoted}
               variant="outline"
               onClick={async () => {
-                const messageId = getMessageIdFromAnnotations(message);
+                let messageId = getMessageIdFromAnnotations(message);
+                if (messageId === null) messageId = message.serverId ?? message.id;
 
                 const upvote = fetch('/api/vote', {
                   method: 'PATCH',
@@ -83,14 +84,14 @@ export function PureMessageActions({
                         if (!currentVotes) return [];
 
                         const votesWithoutCurrent = currentVotes.filter(
-                          (vote) => vote.messageId !== message.id,
+                          (vote) => vote.messageId !== messageId,
                         );
 
                         return [
                           ...votesWithoutCurrent,
                           {
                             chatId,
-                            messageId: message.id,
+                            messageId: messageId,
                             isUpvoted: true,
                           },
                         ];
@@ -117,7 +118,8 @@ export function PureMessageActions({
               variant="outline"
               disabled={vote && !vote.isUpvoted}
               onClick={async () => {
-                const messageId = getMessageIdFromAnnotations(message);
+                let messageId = getMessageIdFromAnnotations(message);
+                if (messageId === null) messageId = message.serverId ?? message.id;
 
                 const downvote = fetch('/api/vote', {
                   method: 'PATCH',
@@ -137,14 +139,14 @@ export function PureMessageActions({
                         if (!currentVotes) return [];
 
                         const votesWithoutCurrent = currentVotes.filter(
-                          (vote) => vote.messageId !== message.id,
+                          (vote) => vote.messageId !== messageId,
                         );
 
                         return [
                           ...votesWithoutCurrent,
                           {
                             chatId,
-                            messageId: message.id,
+                            messageId: messageId,
                             isUpvoted: false,
                           },
                         ];

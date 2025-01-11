@@ -9,6 +9,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import type { Document } from '@/lib/db/schema';
+import { IMessage } from './db/mongoose-schema';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -85,7 +86,7 @@ function addToolMessageToChat({
 }
 
 export function convertToUIMessages(
-  messages: Array<any>,
+  messages: Array<IMessage>,
 ): Array<Message> {
   return messages.reduce((chatMessages: Array<Message>, message) => {
     if (message.role === 'tool') {
@@ -115,12 +116,26 @@ export function convertToUIMessages(
       }
     }
 
+    const annotations = [];
+
+    if (message.role === 'assistant') {
+      annotations.push({modelId: message.modelId || 'gpt-4o-mini'})
+    }
+
     chatMessages.push({
-      id: message.id,
+      id: message._id.toString(),
       role: message.role as Message['role'],
       content: textContent,
       toolInvocations,
-      annotations: [{modelId: message.modelId}]
+
+      annotations,
+
+      parent: message.parent?.toString(),
+      children: message.children.map((id) => id.toString()),
+      siblings:
+        message.parent ?
+          messages.find((m) => m._id.equals(message.parent))?.children.map((id) => id.toString()) :
+          messages.filter((m) => m.parent === undefined).map((m) => m._id.toString()),
     });
 
     return chatMessages;
@@ -214,15 +229,15 @@ export function getDocumentTimestampByIndex(
   return documents[index].createdAt;
 }
 
-export function getMessageIdFromAnnotations(message: Message) {
-  if (!message.annotations) return message.id;
+export function getMessageIdFromAnnotations(message: Message): string | null {
+  if (!message.annotations) return null;
 
   // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
   const annotation = message.annotations.find((annotation) => annotation && annotation.messageIdFromServer);
-  if (!annotation) return message.id;
+  if (!annotation) return null;
 
   // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
-  return annotation.messageIdFromServer;
+  return annotation.messageIdFromServer || null;
 }
 
 export function checkEnglishString(str: string | undefined) {

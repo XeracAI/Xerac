@@ -3,7 +3,7 @@ import { UIBlock } from './block';
 import { PreviewMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Vote } from '@/lib/db/schema';
-import { ChatRequestOptions, Message } from 'ai';
+import { Message } from 'ai';
 
 interface BlockMessagesProps {
   chatId: string;
@@ -12,12 +12,8 @@ interface BlockMessagesProps {
   isLoading: boolean;
   votes: Array<Vote> | undefined;
   messages: Array<Message>;
-  setMessages: (
-    messages: Message[] | ((messages: Message[]) => Message[]),
-  ) => void;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions,
-  ) => Promise<string | null | undefined>;
+  editMessage?: (messageId: string, newContent: string) => void;
+  changeBranch: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
 }
 
@@ -28,8 +24,8 @@ function PureBlockMessages({
   isLoading,
   votes,
   messages,
-  setMessages,
-  reload,
+  editMessage,
+  changeBranch,
   isReadonly,
 }: BlockMessagesProps) {
   const [messagesContainerRef, messagesEndRef] =
@@ -50,11 +46,11 @@ function PureBlockMessages({
           isLoading={isLoading && index === messages.length - 1}
           vote={
             votes
-              ? votes.find((vote) => vote.messageId === message.id)
+              ? votes.find((vote) => vote.messageId === (message.serverId ?? message.id))
               : undefined
           }
-          setMessages={setMessages}
-          reload={reload}
+          editMessage={editMessage}
+          selectSibling={changeBranch}
           isReadonly={isReadonly}
         />
       ))}
@@ -71,14 +67,8 @@ function areEqual(
   prevProps: BlockMessagesProps,
   nextProps: BlockMessagesProps,
 ) {
-  if (
-    prevProps.block.status === 'streaming' &&
-    nextProps.block.status === 'streaming'
-  ) {
-    return true;
-  }
-
-  return false;
+  return prevProps.block.status === 'streaming' &&
+    nextProps.block.status === 'streaming';
 }
 
 export const BlockMessages = memo(PureBlockMessages, areEqual);

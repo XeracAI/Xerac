@@ -46,7 +46,8 @@ function PureBlock({
   setBlock,
   messages,
   setMessages,
-  reload,
+  editMessage,
+  changeBranch,
   votes,
   isReadonly,
 }: {
@@ -61,6 +62,8 @@ function PureBlock({
   setBlock: Dispatch<SetStateAction<UIBlock>>;
   messages: Array<Message>;
   setMessages: Dispatch<SetStateAction<Array<Message>>>;
+  editMessage?: (messageId: string, newContent: string) => void;
+  changeBranch: (nodeId: string, siblingId: string) => void;
   votes: Array<Vote> | undefined;
   append: (
     message: Message | CreateMessage,
@@ -72,9 +75,6 @@ function PureBlock({
     },
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions,
-  ) => Promise<string | null | undefined>;
   isReadonly: boolean;
 }) {
   const {
@@ -273,8 +273,8 @@ function PureBlock({
               setBlock={setBlock}
               votes={votes}
               messages={messages}
-              setMessages={setMessages}
-              reload={reload}
+              editMessage={editMessage}
+              changeBranch={changeBranch}
               isReadonly={isReadonly}
             />
 

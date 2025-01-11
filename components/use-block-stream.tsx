@@ -5,7 +5,6 @@ import { useSWRConfig } from 'swr';
 import type { Suggestion } from '@/lib/db/schema';
 
 import type { UIBlock } from './block';
-import { useUserMessageId } from '@/hooks/use-user-message-id';
 
 type StreamingDelta = {
   type:
@@ -32,8 +31,6 @@ export function useBlockStream({
     Array<Suggestion>
   >([]);
 
-  const { setUserMessageIdFromServer } = useUserMessageId();
-
   useEffect(() => {
     if (optimisticSuggestions && optimisticSuggestions.length > 0) {
       const [optimisticSuggestion] = optimisticSuggestions;
@@ -49,7 +46,6 @@ export function useBlockStream({
     const delta = mostRecentDelta as StreamingDelta;
 
     if (delta.type === 'user-message-id') {
-      setUserMessageIdFromServer(delta.content as string);
       return;
     }
 

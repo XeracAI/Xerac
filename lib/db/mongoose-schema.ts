@@ -5,18 +5,22 @@ export interface IMessageInsert {
 
   chatId: string; // References PostgreSQL Chat.id
 
-  role: string;
+  role: 'system' | 'user' | 'assistant' | 'tool';
 
-  content?: any;
-  images?: any[];
-  audios?: any[];
-  videos?: any[];
-  voice?: any;
+  content?: unknown;
+  images?: unknown[];
+  audios?: unknown[];
+  videos?: unknown[];
+  voice?: unknown;
 
   modelId?: string;
+
+  parent?: mongoose.Types.ObjectId | undefined;
+  children: mongoose.Types.ObjectId[];
 }
 
 export interface IMessage extends IMessageInsert {
+  _id: mongoose.Types.ObjectId,
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,10 +31,13 @@ const messageSchema = new Schema<IMessage>({
     required: true,
     index: true,
   },
+
   role: {
     type: String,
+    enum: ['system', 'user', 'assistant', 'tool'],
     required: true,
   },
+
   content: {
     type: Schema.Types.Mixed,
   },
@@ -49,9 +56,13 @@ const messageSchema = new Schema<IMessage>({
   voice: {
     type: Schema.Types.Mixed,
   },
+
   modelId: {
     type: String,
   },
+
+  parent: mongoose.Types.ObjectId,
+  children: { type: [mongoose.Types.ObjectId], default: [] },
 }, {
     timestamps: true,
 });

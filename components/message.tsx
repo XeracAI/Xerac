@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChatRequestOptions, Message } from 'ai';
+import type { Message } from 'ai';
 import cx from 'classnames';
 import { motion } from 'framer-motion';
 import { memo, useState, type Dispatch, type SetStateAction } from 'react';
@@ -9,7 +9,7 @@ import type { Vote } from '@/lib/db/schema';
 
 import type { UIBlock } from './block';
 import { DocumentToolCall, DocumentToolResult } from './document';
-import { PencilEditIcon, SparklesIcon } from './icons';
+import { PencilEditIcon, SparklesIcon, LeftArrowIcon, RightArrowIcon } from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -29,8 +29,8 @@ const PurePreviewMessage = ({
   setBlock,
   vote,
   isLoading,
-  setMessages,
-  reload,
+  editMessage,
+  selectSibling,
   isReadonly,
 }: {
   chatId: string;
@@ -39,28 +39,28 @@ const PurePreviewMessage = ({
   setBlock: Dispatch<SetStateAction<UIBlock>>;
   vote: Vote | undefined;
   isLoading: boolean;
-  setMessages: (
-    messages: Message[] | ((messages: Message[]) => Message[]),
-  ) => void;
-  reload: (
-    chatRequestOptions?: ChatRequestOptions,
-  ) => Promise<string | null | undefined>;
+  editMessage?: (messageId: string, newContent: string) => void;
+  selectSibling?: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   let model = null;
-  // @ts-expect-error model is not defined in MessageAnnotation
+  // @ts-expect-error modelId is not defined in MessageAnnotation
   const modelId = message.annotations?.find((annotation) => annotation && annotation.modelId)?.modelId;
   if (modelId) {
     model = models.find((model) => model.id === modelId);
   }
 
+  const {siblings = []} = message
+  const siblingIndex = siblings.indexOf(message.serverId ?? message.id)
+
   return (
     <motion.div
       className="w-full mx-auto max-w-3xl px-4 group/message"
-      initial={{ y: 5, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ x: 5, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -5, opacity: 0 }}
       data-role={message.role}
     >
       <div
@@ -100,37 +100,73 @@ const PurePreviewMessage = ({
           )}
 
           {message.content && mode === 'view' && (
-            <div className="flex flex-row gap-2 items-start">
-              {message.role === 'user' && !isReadonly && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
-                      onClick={() => {
-                        setMode('edit');
-                      }}
-                    >
-                      <PencilEditIcon />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Edit message</TooltipContent>
-                </Tooltip>
-              )}
+            <>
+              <div className="flex flex-row gap-2 items-center mb-1">
+                <div
+                  className={cn('flex flex-col gap-4', {
+                    'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                      message.role === 'user',
+                  })}
+                  style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
+                >
+                  <Markdown>{message.content as string}</Markdown>
+                </div>
 
-              <div
-                className={cn('flex flex-col gap-4', {
-                  'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
-                    message.role === 'user',
-                })}
-                style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
-              >
-                <Markdown>{message.content as string}</Markdown>
+                {message.role === 'user' && !isReadonly && editMessage !== undefined && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
+                        onClick={() => {
+                          setMode('edit');
+                        }}
+                      >
+                        <PencilEditIcon />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>ویرایش پیام</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
-            </div>
+
+              {selectSibling !== undefined && siblings.length > 1 && (
+                <div className='flex items-center'>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="p-1 h-fit rounded-md text-muted-foreground"
+                        onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex - 1])}
+                        disabled={siblingIndex === 0}
+                      >
+                        <RightArrowIcon size={12} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>پیام قبلی</TooltipContent>
+                  </Tooltip>
+
+                  <div className="px-0.5 pt-0.5 text-xs">{siblingIndex + 1}/{siblings.length}</div>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="p-1 h-fit rounded-md text-muted-foreground"
+                        onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex + 1])}
+                        disabled={siblingIndex === siblings.length - 1}
+                      >
+                        <LeftArrowIcon size={12} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>پیام بعدی</TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
+            </>
           )}
 
-          {message.content && mode === 'edit' && (
+          {message.content && mode === 'edit' && editMessage !== undefined && (
             <div className="flex flex-row gap-2 items-start">
               <div className="size-8" />
 
@@ -138,8 +174,7 @@ const PurePreviewMessage = ({
                 key={message.id}
                 message={message}
                 setMode={setMode}
-                setMessages={setMessages}
-                reload={reload}
+                editMessage={editMessage}
               />
             </div>
           )}
@@ -242,6 +277,8 @@ const PurePreviewMessage = ({
 export const PreviewMessage = memo(
   PurePreviewMessage,
   (prevProps, nextProps) => {
+    // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
+    return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
     if (prevProps.message.content !== nextProps.message.content) return false;
     if (
@@ -251,9 +288,8 @@ export const PreviewMessage = memo(
       )
     )
       return false;
-    if (!equal(prevProps.vote, nextProps.vote)) return false;
-
-    return true;
+    if (prevProps.message.siblings?.length !== nextProps.message.siblings?.length) return false;
+    return equal(prevProps.vote, nextProps.vote);
   },
 );
 
