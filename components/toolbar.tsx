@@ -11,6 +11,7 @@ import {
 import {
   type Dispatch,
   type JSX,
+  type RefObject,
   memo,
   type SetStateAction,
   useEffect,
@@ -350,7 +351,7 @@ const PureToolbar = ({
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  useOnClickOutside(toolbarRef, () => {
+  useOnClickOutside(toolbarRef as RefObject<HTMLDivElement>, () => {
     setIsToolbarVisible(false);
     setSelectedTool(null);
   });

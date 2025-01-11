@@ -42,7 +42,7 @@ export const {
         countryCode: {},
       },
       async authorize({ phoneNumber, countryCode }) {
-        const user = await getUser(phoneNumber, countryCode);
+        const user = await getUser(phoneNumber as string, countryCode as string);
         return user === null ? null : { id: user.id, phoneNumber: user.phoneNumber, countryCode: user.countryCode, firstName: user.firstName, lastName: user.lastName };
       },
     }),
