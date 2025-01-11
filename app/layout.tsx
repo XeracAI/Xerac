@@ -64,7 +64,7 @@ export default async function RootLayout({
           defaultTheme="system"
           enableSystem
         >
-          <Toaster position="top-center" />
+          <Toaster position="top-center" toastOptions={{ style: { fontFamily: "Shabnam, ui-sans-serif, system-ui, -apple-system" } }} />
           {children}
         </ThemeProvider>
       </body>
