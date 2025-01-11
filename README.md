@@ -1,6 +1,6 @@
-<a href="https://chat.vercel.ai/">
-  <img alt="Next.js 14 and App Router-ready AI chatbot." src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Next.js AI Chatbot</h1>
+<a href="https://xerac.org">
+  <img alt="Next.js 15/React 19 and App Router-ready AI chatbot." src="app/(chat)/chat/opengraph-image.png">
+  <h1 align="center">Next.js AI Chatbot + Xerac</h1>
 </a>
 
 <p align="center">
@@ -11,7 +11,9 @@
   <a href="#features"><strong>Features</strong></a> ·
   <a href="#model-providers"><strong>Model Providers</strong></a> ·
   <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
-  <a href="#running-locally"><strong>Running locally</strong></a>
+  <a href="#running-locally"><strong>Running locally</strong></a> ·
+  <a href="#extra-features"><strong>Extra Features</strong></a> ·
+  <a href="#future-roadmap"><strong>Future Roadmap</strong></a>
 </p>
 <br/>
 
@@ -59,3 +61,32 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000/).
+
+## Extra Features
+
+- Support for different model providers via LiteLLM
+- Support for different modalities
+  - Image generation
+    - DALL-E
+    - Leonardo AI (Coming soon)
+  - Voice mode (Coming soon)
+- Message editing and conversation branching
+- Infinite scroll pagination for chat history
+
+## Future Roadmap
+
+- SMS OTP rate limit
+- Model, provider and global rate limits
+- PDF (and other file types) support
+  - Models that support it out-of-the-box will receive the file
+  - Models that don't support it will receive a converted text version using [Markitdown](https://github.com/microsoft/markitdown)
+  - Image PDFs will can be converted to text using OCR models
+- Input area notifications
+- Telemetry and analytics
+  - Using Clickhouse and [Langwatch](https://langwatch.ai/)
+- I18n
+- Organization, teams and projects
+- Custom themes and color palletes
+- Pro mode: a toggle to add more features for power users
+  - Token count
+  - Parameter tuning (e.g. temperature)
