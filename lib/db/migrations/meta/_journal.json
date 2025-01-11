@@ -50,6 +50,41 @@
       "when": 1734182333393,
       "tag": "0006_lucky_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1734254125616,
+      "tag": "0007_watery_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1734298928547,
+      "tag": "0008_slim_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1734348511082,
+      "tag": "0009_faithful_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1734378047354,
+      "tag": "0010_bright_goblin_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1734411528459,
+      "tag": "0011_pretty_roughhouse",
+      "breakpoints": true
     }
   ]
 }

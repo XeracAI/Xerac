@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "phone_unique_idx" ON "User" USING btree ("phoneNumber","countryCode");

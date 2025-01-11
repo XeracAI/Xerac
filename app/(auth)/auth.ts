@@ -1,13 +1,31 @@
-import { compare } from 'bcrypt-ts';
-import NextAuth, { type User, type Session } from 'next-auth';
+import NextAuth, { type Session } from 'next-auth';
+import 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
 
+import { authConfig } from './auth.config';
 import { getUser } from '@/lib/db/queries';
 
-import { authConfig } from './auth.config';
+declare module "next-auth" {
+  interface User {
+    id?: string
+    name?: string | null
+    email?: string | null
+    image?: string | null
+    countryCode: string
+    phoneNumber: string
+    firstName: string | null
+    lastName: string | null
+  }
+}
 
-interface ExtendedSession extends Session {
-  user: User;
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id: string;
+    phoneNumber: string;
+    countryCode: string;
+    firstName: string | null;
+    lastName: string | null;
+  }
 }
 
 export const {
@@ -19,21 +37,24 @@ export const {
   ...authConfig,
   providers: [
     Credentials({
-      credentials: {},
-      async authorize({ email, password }: any) {
-        const users = await getUser(email);
-        if (users.length === 0) return null;
-        // biome-ignore lint: Forbidden non-null assertion.
-        const passwordsMatch = await compare(password, users[0].password!);
-        if (!passwordsMatch) return null;
-        return users[0] as any;
+      credentials: {
+        phoneNumber: {},
+        countryCode: {},
+      },
+      async authorize({ phoneNumber, countryCode }) {
+        const user = await getUser(phoneNumber, countryCode);
+        return user === null ? null : { id: user.id, phoneNumber: user.phoneNumber, countryCode: user.countryCode, firstName: user.firstName, lastName: user.lastName };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
+      if (user && user.id) {
         token.id = user.id;
+        token.phoneNumber = user.phoneNumber;
+        token.countryCode = user.countryCode;
+        token.firstName = user.firstName;
+        token.lastName = user.lastName;
       }
 
       return token;
@@ -42,13 +63,23 @@ export const {
       session,
       token,
     }: {
-      session: ExtendedSession;
-      token: any;
+      session: Session;
+      token: {
+        id: string;
+        phoneNumber: string;
+        countryCode: string;
+        firstName: string | null;
+        lastName: string | null;
+      };
     }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = token.id;
+        session.user.phoneNumber = token.phoneNumber;
+        session.user.countryCode = token.countryCode;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
       }
-
+      
       return session;
     },
   },
