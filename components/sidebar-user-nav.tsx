@@ -35,7 +35,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                 height={24}
                 className="rounded-full"
               />
-              <span className="truncate">{user?.email}</span>
+              <span className="truncate">{`خوش اومدی ${user?.firstName}!` || user?.email || ("0" + user?.phoneNumber)}</span>
               <ChevronUp className="mr-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -55,7 +55,7 @@ export function SidebarUserNav({ user }: { user: User }) {
               <button
                 type="button"
                 className="w-full cursor-pointer"
-                onClick={() => signOut({ redirectTo: '/' })}
+                onClick={() => signOut({ redirectTo: '/chat' })}
               >
                 خروج
               </button>

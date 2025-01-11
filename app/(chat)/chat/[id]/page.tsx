@@ -6,7 +6,7 @@ import { Chat } from '@/components/chat';
 import { DEFAULT_MODEL_NAME, models } from '@/lib/ai/models';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
-import type {Metadata, ResolvingMetadata} from "next";
+import type {Metadata} from "next";
 
 type Props = {
   params: Promise<{ id: string }>
@@ -14,7 +14,6 @@ type Props = {
 
 export async function generateMetadata(
   { params }: Props,
-  parent: ResolvingMetadata
 ): Promise<Metadata> {
   // read route params
   const id = (await params).id

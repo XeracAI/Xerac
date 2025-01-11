@@ -43,7 +43,7 @@ function PureChatHeader({
             variant="outline"
             className="order-2 md:order-1 md:px-2 px-2 md:h-fit ml-auto md:ml-0"
             onClick={() => {
-              router.push('/');
+              router.push('/chat');
               router.refresh();
             }}
           >
@@ -81,5 +81,5 @@ function PureChatHeader({
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
   if (prevProps.selectedModelId !== nextProps.selectedModelId) return false;
-  return !(prevProps.chat !== undefined && nextProps.chat !== undefined && prevProps.chat.title !== nextProps.chat.title);
+  return !(prevProps.chat?.title !== nextProps.chat?.title);
 });

@@ -10,6 +10,7 @@ import {
 } from 'framer-motion';
 import {
   type Dispatch,
+  type JSX,
   memo,
   type SetStateAction,
   useEffect,
@@ -33,7 +34,6 @@ import {
   StopIcon,
   SummarizeIcon,
 } from './icons';
-import equal from 'fast-deep-equal';
 
 type ToolProps = {
   type: 'final-polish' | 'request-suggestions' | 'adjust-reading-level';
@@ -149,7 +149,7 @@ const Tool = ({
   );
 };
 
-const randomArr = [...Array(6)].map((x) => nanoid(5));
+const randomArr = [...Array(6)].map(() => nanoid(5));
 
 const ReadingLevelSelector = ({
   setSelectedTool,
@@ -345,7 +345,7 @@ const PureToolbar = ({
   setMessages: Dispatch<SetStateAction<Message[]>>;
 }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
