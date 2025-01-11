@@ -1,0 +1,50 @@
+# Build and publish a tag/branch to Gitlab Docker Registry using Kaniko and Gitlab Docker executor.
+Build and push Docker image:
+  variables:
+    # Additional options for Kaniko executor.
+    # To enable caching use "--cache=true", Or if copy layers are small enough use "--cache=true --cache-copy-layers".
+    # For more details see https://github.com/GoogleContainerTools/kaniko/blob/master/README.md#additional-flags
+    KANIKO_ARGS: "--cache=true --build-arg=POSTGRES_URL=${POSTGRES_URL}"
+    KANIKO_BUILD_CONTEXT: $CI_PROJECT_DIR
+  stage: build
+  image:
+    # For latest releases see https://github.com/GoogleContainerTools/kaniko/releases
+    # Only debug/*-debug versions of the Kaniko image are known to work within Gitlab CI
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  environment: $CI_COMMIT_BRANCH
+  script:
+    # Git Branch/Tag to Docker Image Tag Mapping
+    #   * Default Branch: main -> latest and main-<short sha>-<timestamp>
+    #   * Branch: feature/my-feature -> feature-my-feature-<short sha>-<timestamp>
+    #   * Tag: v1.0.0/beta2 -> v1.0.0-beta2
+    - |
+      if [ -n "$CI_COMMIT_TAG" ];then
+        NOSLASH=$(echo "$CI_COMMIT_TAG" | tr -s / - )
+        SANITIZED="${NOSLASH//[^a-zA-Z0-9\-\.]/}"
+        VERSION="$SANITIZED"
+      else
+        NOSLASH=$(echo "$CI_COMMIT_REF_NAME" | tr -s / - )
+        SANITIZED="${NOSLASH//[^a-zA-Z0-9\-]/}"
+        VERSION="$SANITIZED-$CI_COMMIT_SHORT_SHA-$(date +%s)"
+      fi
+      export IMAGE_TAG=$CI_REGISTRY_IMAGE:$VERSION
+      if [ "$CI_COMMIT_REF_NAME" = "$CI_DEFAULT_BRANCH" ]; then
+        export KANIKO_ARGS="--destination $CI_REGISTRY_IMAGE:latest $KANIKO_ARGS"
+      fi
+    - echo $IMAGE_TAG
+    - echo $KANIKO_ARGS
+    - mkdir -p /kaniko/.docker
+    # Write credentials to access Gitlab Container Registry within the runner/ci
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    # Build and push the container. To disable push add --no-push
+    - DOCKERFILE_PATH=${DOCKERFILE_PATH:-"$KANIKO_BUILD_CONTEXT/Dockerfile"}
+    - /kaniko/executor --context $KANIKO_BUILD_CONTEXT --dockerfile $DOCKERFILE_PATH --destination $IMAGE_TAG $KANIKO_ARGS
+  # Run this job in a branch/tag where a Dockerfile exists
+  rules:
+    - exists:
+        - Dockerfile
+    # custom Dockerfile path
+    - if: $DOCKERFILE_PATH
+    # custom build context without an explicit Dockerfile path
+    - if: $KANIKO_BUILD_CONTEXT != $CI_PROJECT_DIR
