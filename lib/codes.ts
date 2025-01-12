@@ -16,7 +16,8 @@ export function generateCode(length: number): string {
 }
 
 export async function generateUniqueCode<T extends TableConfig>(model: PgTableWithColumns<T>, field: keyof T['columns']) {
-	const length = Math.ceil(Math.log10(await count(model)));
+	let length = Math.ceil(Math.log10(await count(model))) + 1;
+	if (length < 4) length = 4;
 	let code;
 	while (true) {
 		code = generateCode(length);
