@@ -52,7 +52,6 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
     const referralCode = formData.get('referralCode') as string;
-    console.log({phone, otp, password, password1, password2, firstName, lastName, referralCode})
 
     if (!phone) return { status: 'idle' };
     const validatedPhone = phoneSchema.parse({ phone });
@@ -71,16 +70,15 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
 
       // If user's phone is not verified, newly created or has not set their password yet, send OTP
       if (!user.isPhoneNumberVerified || !user.password) {
-        // if ((user.lastSMSSent && Date.now() - user.lastSMSSent.getTime() < 160000) || (user.lockedUntil && new Date() < user.lockedUntil)) {
-        //   return { status: 'wait' }
-        // }
+        if ((user.lastSMSSent && Date.now() - user.lastSMSSent.getTime() < 160000) || (user.lockedUntil && new Date() < user.lockedUntil)) {
+          return { status: 'wait' }
+        }
 
         const otp = await generateOTP();
         await Promise.all([
           sendSMS(phoneNumber.number, otp),
           updateUserOTP(user.id, otp, new Date(Date.now() + 300000)),
         ]);
-        console.log({otp})
         return { status: 'needs_verification' };
       }
 

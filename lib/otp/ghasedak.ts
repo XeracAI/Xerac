@@ -27,14 +27,14 @@ export const generateOTP = async () => {
 }
 
 export const sendSMS = async (phoneNumber: string, otp: string) => {
-  // await fetch(ghasedakVerificationPath, {
-  //   method: 'POST',
-  //   body: `receptor=${phoneNumber}&type=1&template=${ghasedakTemplateName}&param1=${otp}`,
-  //   headers: {
-  //     Accept: 'application/json',
-  //     'Content-Type': 'application/x-www-form-urlencoded',
-  //     charset: 'utf-8',
-  //     apikey: ghasedakAPIKey,
-  //   },
-  // })
+  await fetch(ghasedakVerificationPath, {
+    method: 'POST',
+    body: `receptor=${phoneNumber}&type=1&template=${ghasedakTemplateName}&param1=${otp}`,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      charset: 'utf-8',
+      apikey: ghasedakAPIKey,
+    },
+  })
 }
