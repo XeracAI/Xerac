@@ -40,11 +40,13 @@ export default function Page() {
       } else if (result.status === 'success') {
         router.push('/chat')
         router.refresh();
+        return true;
       }
     } catch (error: unknown) {
       console.error('Login error:', error);
       toast.error('خطایی رخ داد. لطفا دوباره تلاش کنید.');
     }
+    return false;
   };
 
   const getTitleText = () => {

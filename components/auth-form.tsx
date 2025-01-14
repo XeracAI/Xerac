@@ -14,7 +14,7 @@ export function AuthForm({
   step = 'phone',
   setStep,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<boolean>;
   defaultPhone?: string;
   step: 'phone' | 'otp' | 'password-set' | 'name-set' | 'password';
   setStep: (value: 'phone' | 'otp' | 'password-set' | 'name-set' | 'password') => void;
@@ -34,8 +34,9 @@ export function AuthForm({
     setIsLoading(true);
     try {
       const formData = new FormData(e.currentTarget);
-      await action(formData);
-    } finally {
+      setIsLoading(await action(formData));
+    } catch (e) {
+      console.error(`Failed to authenticate user: ${e}`);
       setIsLoading(false);
     }
   };
