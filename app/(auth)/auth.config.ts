@@ -12,25 +12,25 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnChat = nextUrl.pathname.startsWith('/');
+      const isOnChat = nextUrl.pathname === '/chat';
       const isOnAuth = nextUrl.pathname.startsWith('/login');
 
-      // if (isLoggedIn && isOnAuth) {
-      //   return Response.redirect(new URL('/chat', nextUrl as unknown as URL));
-      // }
+      if (isLoggedIn && isOnAuth) {
+        return Response.redirect(new URL('/chat', nextUrl as unknown as URL));
+      }
 
       if (isOnAuth) {
         return true; // Always allow access to login page
       }
 
       if (isOnChat) {
-        if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
+        // Redirect unauthenticated users to login page
+        return isLoggedIn;
       }
 
-      if (isLoggedIn) {
-        return Response.redirect(new URL('/', nextUrl as unknown as URL));
-      }
+      // if (isLoggedIn) {
+      //   return Response.redirect(new URL('/', nextUrl as unknown as URL));
+      // }
 
       return true;
     },
