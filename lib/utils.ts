@@ -3,6 +3,7 @@ import type {
   CoreMessage,
   CoreToolMessage,
   Message,
+  ToolContent,
   ToolInvocation,
 } from 'ai';
 import { type ClassValue, clsx } from 'clsx';
@@ -56,44 +57,48 @@ function addToolMessageToChat({
   toolMessage,
   messages,
 }: {
-  toolMessage: CoreToolMessage;
+  toolMessage: IMessage;
   messages: Array<Message>;
 }): Array<Message> {
-  return messages.map((message) => {
-    if (message.toolInvocations) {
-      return {
-        ...message,
-        toolInvocations: message.toolInvocations.map((toolInvocation) => {
-          const toolResult = toolMessage.content.find(
-            (tool) => tool.toolCallId === toolInvocation.toolCallId,
-          );
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
 
-          if (toolResult) {
-            return {
-              ...toolInvocation,
-              state: 'result',
-              result: toolResult.result,
-            };
+    if (message.toolInvocations) {
+      for (let j = 0; j < message.toolInvocations.length; j++) {
+        const toolInvocation = message.toolInvocations[j];
+        const toolResult = (toolMessage.content as ToolContent).find(
+          (tool) => tool.toolCallId === toolInvocation.toolCallId,
+        );
+
+        if (toolResult) {
+          if (toolMessage.parent && toolMessage.parent.equals(message.id) && message.children) {
+            message.children = message.children.filter(id => !toolMessage._id.equals(id));
           }
 
-          return toolInvocation;
-        }),
-      };
+          message.toolInvocations[j] = {
+            ...toolInvocation,
+            state: 'result',
+            result: toolResult.result,
+          };
+        }
+      }
     }
-
-    return message;
-  });
+  }
+  return messages;
 }
 
 export function convertToUIMessages(
   messages: Array<IMessage>,
 ): Array<Message> {
-  return messages.reduce((chatMessages: Array<Message>, message) => {
+  const chatMessages: Array<Message> = [];
+
+  for (const message of messages) {
     if (message.role === 'tool') {
-      return addToolMessageToChat({
-        toolMessage: message as CoreToolMessage,
+      addToolMessageToChat({
+        toolMessage: message,
         messages: chatMessages,
       });
+      continue;
     }
 
     let textContent = '';
@@ -119,7 +124,43 @@ export function convertToUIMessages(
     const annotations = [];
 
     if (message.role === 'assistant') {
-      annotations.push({modelId: message.modelId || 'gpt-4o-mini'})
+      annotations.push({modelId: message.modelId || 'gpt-4o-mini'});
+
+      // Check if the parent was a tool message
+      const parent = messages.find((m) => m._id.equals(message.parent))
+      if (parent !== undefined && parent.role === 'tool') {
+        // Find the last assistant message that made the tool calls
+        const toolCallIds = (parent.content as ToolContent).map((toolCall) => toolCall.toolCallId);
+        const lastAssistantMessage = messages
+          .slice(0, messages.indexOf(message))
+          .reverse()
+          .find((m) => 
+            m.role === 'assistant' && 
+            Array.isArray(m.content) &&
+            m.content.some(c => 
+              c.type === 'tool-call' && 
+              toolCallIds.includes(c.toolCallId)
+            )
+          );
+
+        if (!lastAssistantMessage) {
+          throw Error("Message array is incomplete!");
+        }
+
+        // Remove the tool message from new parent's children
+        lastAssistantMessage.children = lastAssistantMessage.children.filter((c) => !c._id.equals(message.parent))
+
+        // Set it as the new parent
+        message.parent = lastAssistantMessage._id;
+
+        // Add this message to the parent's children
+        lastAssistantMessage.children.push(message._id);
+
+        const lastAssistantChatMessage = chatMessages.find((m) => lastAssistantMessage._id.equals(m.id))
+        if (lastAssistantChatMessage) {
+          lastAssistantChatMessage.children?.push(message._id.toString());
+        }
+      }
     }
 
     chatMessages.push({
@@ -137,9 +178,9 @@ export function convertToUIMessages(
           messages.find((m) => m._id.equals(message.parent))?.children.map((id) => id.toString()) :
           messages.filter((m) => m.parent === undefined).map((m) => m._id.toString()),
     });
+  }
 
-    return chatMessages;
-  }, []);
+  return chatMessages;
 }
 
 export function sanitizeResponseMessages(

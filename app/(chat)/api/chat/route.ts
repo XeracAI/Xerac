@@ -28,6 +28,7 @@ import {
 } from '@/lib/db/queries';
 import type { Suggestion } from '@/lib/db/schema';
 import {
+  convertToUIMessages,
   generateUUID,
   sanitizeResponseMessages,
 } from '@/lib/utils';
@@ -155,8 +156,7 @@ export async function POST(request: Request) {
 
         const branch = constructBranchUntilDBMessage(leaf, dbMessages);
         parent = leaf.parent;
-        // @ts-expect-error Field "role" in type IMessage is not compatible to type UIMessage
-        coreMessages = [...convertToCoreMessages(branch), userCoreMessage];
+        coreMessages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
       } else {
         if (parentId === undefined) {
           return new Response('Must provide a valid parent message ID for non-empty chats!', { status: 400 });
@@ -164,14 +164,13 @@ export async function POST(request: Request) {
           return new Response('Invalid parent message ID!', { status: 400 });
         }
 
-        parent = dbMessages.find((m) => m._id.equals(parentId))
+        parent = dbMessages.find((m) => m._id.equals(parentId));
         if (parent === undefined) {
           return new Response('Parent message not found!', { status: 400 });
         }
 
         const branch = constructBranchFromDBMessages(parent, dbMessages);
-        // @ts-expect-error Field "role" in type IMessage is not compatible to type UIMessage
-        coreMessages = [...convertToCoreMessages(branch), userCoreMessage];
+        coreMessages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
         parent = parent._id;
       }
 
