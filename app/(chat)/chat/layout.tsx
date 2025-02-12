@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -14,6 +15,11 @@ export default async function Layout({
 }) {
   const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const isCollapsed = cookieStore.get('sidebar:state')?.value !== 'true';
+
+  // Redirect to login if user is not authenticated or missing name information
+  if (!session?.user?.firstName || !session?.user?.lastName) {
+    redirect('/login');
+  }
 
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
