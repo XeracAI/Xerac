@@ -37,6 +37,7 @@ import { IMessageInsert } from "@/lib/db/mongoose-schema";
 import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 
 export const maxDuration = 60;
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type AllowedTools =
   | 'createDocument'
@@ -103,10 +104,11 @@ export async function POST(request: Request) {
     return new Response('Unauthorized!', { status: 401 });
   }
 
+  // Validations
   if (id === undefined) {
     return new Response('"id" is a required field!', { status: 400 });
-  } else {
-    // TODO check if it's a valid UUID
+  } else if (!uuidRegex.test(id)) {
+    return new Response('Invalid UUID format!', { status: 400 });
   }
   if (message === undefined) {
     return new Response('"message" is a required field!', { status: 400 });
