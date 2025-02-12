@@ -9,7 +9,7 @@ import { AuthForm } from '@/components/auth-form';
 import { authenticate } from '../actions';
 
 export default function Page() {
-  const {setTheme, theme} = useTheme()
+  const {setTheme, theme} = useTheme();
   const router = useRouter();
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -21,26 +21,42 @@ export default function Page() {
 
       const result = await authenticate(formData);
 
-      if (result.status === 'invalid_data') {
-        toast.error('اطلاعات وارد شده معتبر نیست!');
-      } else if (result.status === 'failed') {
-        toast.error('بررسی اطلاعات حساب کاربری با خطا مواجه شد!');
-      } else if (result.status === 'needs_verification') {
-        setStep("otp");
-        toast.info('کد تایید به شماره موبایل شما ارسال شد');
-      } else if (result.status === 'needs_password_set') {
-        setStep("password-set");
-        toast.info('لطفا یک رمز عبور جدید برای خود تعیین کنید');
-      } else if (result.status === 'needs_name_set') {
-        setStep("name-set");
-      } else if (result.status === 'invalid_otp') {
-        toast.error('کد تایید نامعتبر است!');
-      } else if (result.status === 'in_progress') {
-        setStep("password");
-      } else if (result.status === 'success') {
-        router.push('/chat')
-        router.refresh();
-        return true;
+      switch (result.status) {
+        case 'invalid_data':
+          toast.error('اطلاعات وارد شده معتبر نیست!');
+          break;
+        case 'user_not_found':
+          toast.error('کاربر پیدا نشد!');
+          break;
+        case 'failed':
+          toast.error('بررسی اطلاعات حساب کاربری با خطا مواجه شد!');
+          break;
+        case 'wait':
+          toast.warning('به دلیل وارد کردن مکرر کد تایید اشتباه، حساب شما 3 دقیقه قفل شده. لطفا بعدا دوباره تلاش کنید.')
+        case 'needs_verification':
+          setStep("otp");
+          toast.info('کد تایید به شماره موبایل شما ارسال شد');
+          break;
+        case 'needs_password_set':
+          setStep("password-set");
+          toast.info('لطفا یک رمز عبور جدید برای خود تعیین کنید');
+          break;
+        case 'needs_name_set':
+          setStep("name-set");
+          break;
+        case 'expired_otp':
+          toast.error('کد تایید منقضی شده است!');
+          break;
+        case 'invalid_otp':
+          toast.error('کد تایید نامعتبر است!');
+          break;
+        case 'in_progress':
+          setStep("password");
+          break;
+        case 'success':
+          router.push('/chat')
+          router.refresh();
+          return true;
       }
     } catch (error: unknown) {
       console.error('Login error:', error);

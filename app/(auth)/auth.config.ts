@@ -15,10 +15,6 @@ export const authConfig = {
       const isOnChat = nextUrl.pathname === '/chat';
       const isOnAuth = nextUrl.pathname.startsWith('/login');
 
-      if (isLoggedIn && isOnAuth) {
-        return Response.redirect(new URL('/chat', nextUrl as unknown as URL));
-      }
-
       if (isOnAuth) {
         return true; // Always allow access to login page
       }

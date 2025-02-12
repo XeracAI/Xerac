@@ -5,12 +5,12 @@ import { sql } from 'drizzle-orm'
 import { PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core';
 
 // Charset for generating referral codes. Removed 0 (zero), O (capital letter for o), 1 (one) and I (capital letter for i) for more clarity.
-const charset: string = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const referralCharset: string = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 export function generateCode(length: number): string {
 	let code: string = "";
 	for (let i = 0; i < length; ++i) {
-		code += charset.charAt(Math.floor(Math.random() * charset.length));
+		code += referralCharset.charAt(Math.floor(Math.random() * referralCharset.length));
 	}
 	return code;
 }

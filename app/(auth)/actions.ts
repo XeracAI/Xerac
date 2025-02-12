@@ -5,7 +5,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 import { createUser, updateUserVerification, updateUserPassword, updateUserOTP, getUserWithAllFields, updateUserFailedTries, updateUserInfo, getUserByReferralCode } from '@/lib/db/queries';
 import { auth, signIn } from './auth';
-import { generateOTP, sendSMS } from '@/lib/otp/ghasedak';
+import { generateOTP } from '@/lib/otp/generate';
+import { sendSMS } from '@/lib/otp/deliver';
 import { compareSync } from 'bcrypt-ts';
 
 const phoneSchema = z.object({
@@ -32,12 +33,14 @@ export interface AuthActionState {
     | 'in_progress' 
     | 'success'
     | 'failed'
+    | 'user_not_found'
     | 'invalid_data'
     | 'needs_verification'
     | 'needs_password_set'
     | 'needs_name_set'
     | 'wait'
-    | 'invalid_otp';
+    | 'invalid_otp'
+    | 'expired_otp';
 }
 
 export async function authenticate(formData: FormData): Promise<AuthActionState> {
@@ -86,7 +89,7 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
     }
 
     if (user === null) {
-      return { status: 'invalid_data' }
+      return { status: 'user_not_found' }
     }
 
     // Then validate OTP if needed
@@ -94,13 +97,19 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
       otpSchema.parse({ otp });
 
       // Return error if phone is already verified or otp is incorrect
-      if ((user.isPhoneNumberVerified && user.password) || (user.otpExpires && new Date() > user.otpExpires)) {
+      if (user.isPhoneNumberVerified && user.password) {
         return { status: 'invalid_data' }
       }
 
+      // Return error if OTP is expired
+      if (user.otpExpires && new Date() > user.otpExpires) {
+        return { status: 'expired_otp' }
+      }
+
+      // Return error and increase fails if OTP is wrong
       if (user.otp !== otp) {
         await updateUserFailedTries(user.id, user.failedTries + 1, user.failedTries === 3 ? new Date(Date.now() + 900000) : undefined)
-        return { status: 'invalid_data' }
+        return { status: 'invalid_otp' }
       }
 
       await updateUserVerification(user.id, true);
@@ -146,6 +155,11 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
 
       await updateUserInfo(user.id, firstName, lastName, referrer)
 
+      await signIn('credentials', {
+        phoneNumber: user.phoneNumber, countryCode: user.countryCode,
+        redirect: false
+      });
+
       return { status: 'success' }
     }
 
@@ -161,9 +175,9 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
       redirect: false,
     });
 
-    return { status: 'success' };
+    return { status: (!user.firstName || !user.lastName) ? 'needs_name_set' : 'success' };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     if (error instanceof z.ZodError) {
       return { status: 'invalid_data' };
     }
