@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IMessageInsert {
-  _id?: mongoose.Types.ObjectId,
+  _id?: mongoose.Types.ObjectId;
 
   chatId: string; // References PostgreSQL Chat.id
 
@@ -20,7 +20,7 @@ export interface IMessageInsert {
 }
 
 export interface IMessage extends IMessageInsert {
-  _id: mongoose.Types.ObjectId,
+  _id: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,7 +88,7 @@ export interface IFile {
 	isProcessed: boolean;
 	convertedText?: string;
 	convertedFileURL?: string;
-	GPTTokenCount?: number,
+	GPTTokenCount?: number;
 
 	additionalInfo?: mongoose.Schema.Types.Mixed;
 

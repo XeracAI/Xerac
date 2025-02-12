@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "dateCreated" timestamp DEFAULT now() NOT NULL;

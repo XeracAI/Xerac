@@ -36,6 +36,8 @@ export const user = pgTable('User', {
   referralCode: varchar('referralCode', { length: 10 }).unique(),
   referrer: uuid().references((): AnyPgColumn => user.id),
   referrerDiscountUsed: boolean('referrerDiscountUsed').notNull().default(false),
+
+  dateCreated: timestamp('dateCreated').notNull().defaultNow(),
 }, (table) => ({
   phoneUnique: uniqueIndex('phone_unique_idx').on(table.phoneNumber, table.countryCode),
 }));
