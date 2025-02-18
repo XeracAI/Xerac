@@ -15,7 +15,7 @@ import {
   vote,
   UserWithAllFields,
 } from './schema';
-import { BlockKind } from '@/components/block';
+import { ArtifactKind } from '@/components/artifact';
 
 import {IMessage, IMessageInsert, Message} from './mongoose-schema'
 import dbConnect from './connect'
@@ -319,7 +319,7 @@ export async function saveDocument({
 }: {
   id: string;
   title: string;
-  kind: BlockKind;
+  kind: ArtifactKind;
   content: string;
   userId: string;
 }) {

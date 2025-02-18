@@ -4,9 +4,9 @@ import { Vote } from '@/lib/db/schema';
 import { ChatRequestOptions, Message } from 'ai';
 import { memo } from 'react';
 import equal from 'fast-deep-equal';
-import { UIBlock } from './block';
+import { UIArtifact } from './artifact';
 
-interface BlockMessagesProps {
+interface ArtifactMessagesProps {
   chatId: string;
   isLoading: boolean;
   votes: Array<Vote> | undefined;
@@ -14,10 +14,10 @@ interface BlockMessagesProps {
   editMessage?: (messageId: string, newContent: string) => void;
   changeBranch: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
-  blockStatus: UIBlock['status'];
+  artifactStatus: UIArtifact['status'];
 }
 
-function PureBlockMessages({
+function PureArtifactMessages({
   chatId,
   isLoading,
   votes,
@@ -25,7 +25,7 @@ function PureBlockMessages({
   editMessage,
   changeBranch,
   isReadonly,
-}: BlockMessagesProps) {
+}: ArtifactMessagesProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
@@ -60,12 +60,12 @@ function PureBlockMessages({
 }
 
 function areEqual(
-  prevProps: BlockMessagesProps,
-  nextProps: BlockMessagesProps,
+  prevProps: ArtifactMessagesProps,
+  nextProps: ArtifactMessagesProps,
 ) {
   if (
-    prevProps.blockStatus === 'streaming' &&
-    nextProps.blockStatus === 'streaming'
+    prevProps.artifactStatus === 'streaming' &&
+    nextProps.artifactStatus === 'streaming'
   )
     return true;
 
@@ -77,4 +77,4 @@ function areEqual(
   return true;
 }
 
-export const BlockMessages = memo(PureBlockMessages, areEqual);
+export const ArtifactMessages = memo(PureArtifactMessages, areEqual);

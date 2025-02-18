@@ -1,9 +1,9 @@
 import { memo } from 'react';
 
-import type { BlockKind } from './block';
+import type { ArtifactKind } from './artifact';
 import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from './icons';
 import { toast } from 'sonner';
-import { useBlock } from '@/hooks/use-block';
+import { useArtifact } from '@/hooks/use-artifact';
 import {checkEnglishString} from '@/lib/utils'
 
 const getActionText = (
@@ -26,7 +26,7 @@ const getActionText = (
 
 interface DocumentToolResultProps {
   type: 'create' | 'update' | 'request-suggestions';
-  result: { id: string; title: string; kind: BlockKind };
+  result: { id: string; title: string; kind: ArtifactKind };
   isReadonly: boolean;
 }
 
@@ -35,12 +35,12 @@ function PureDocumentToolResult({
   result,
   isReadonly,
 }: DocumentToolResultProps) {
-  const { setBlock } = useBlock();
+  const { setArtifact } = useArtifact();
 
   return (
     <button
       type="button"
-      className="bg-background cursor-pointer border border-primary pb-2 pt-3 px-3 rounded-xl w-fit flex flex-row gap-3 items-start"
+      className="bg-background cursor-pointer border py-2 px-3 rounded-xl w-fit flex flex-row gap-3 items-start"
       onClick={(event) => {
         if (isReadonly) {
           toast.error(
@@ -58,7 +58,7 @@ function PureDocumentToolResult({
           height: rect.height,
         };
 
-        setBlock({
+        setArtifact({
           documentId: result.id,
           kind: result.kind,
           content: '',
@@ -69,7 +69,7 @@ function PureDocumentToolResult({
         });
       }}
     >
-      <div className="text-muted-foreground mt-[2]">
+      <div className="text-muted-foreground mt-1">
         {type === 'create' ? (
           <FileIcon />
         ) : type === 'update' ? (
@@ -98,12 +98,12 @@ function PureDocumentToolCall({
   args,
   isReadonly,
 }: DocumentToolCallProps) {
-  const { setBlock } = useBlock();
+  const { setArtifact } = useArtifact();
 
   return (
     <button
       type="button"
-      className="cursor pointer w-fit border border-primary pb-2 pt-3 px-3 rounded-xl flex flex-row items-start justify-between gap-3"
+      className="cursor pointer w-fit border py-2 px-3 rounded-xl flex flex-row items-start justify-between gap-3"
       onClick={(event) => {
         if (isReadonly) {
           toast.error(
@@ -121,8 +121,8 @@ function PureDocumentToolCall({
           height: rect.height,
         };
 
-        setBlock((currentBlock) => ({
-          ...currentBlock,
+        setArtifact((currentArtifact) => ({
+          ...currentArtifact,
           isVisible: true,
           boundingBox,
         }));

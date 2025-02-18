@@ -9,10 +9,9 @@ import { useWindowSize } from 'usehooks-ts';
 import type { Document } from '@/lib/db/schema';
 import { getDocumentTimestampByIndex } from '@/lib/utils';
 
-import type { UIBlock } from './block';
 import { LoaderIcon } from './icons';
 import { Button } from './ui/button';
-import { useBlock } from '@/hooks/use-block';
+import { useArtifact } from '@/hooks/use-artifact';
 
 interface VersionFooterProps {
   handleVersionChange: (type: 'next' | 'prev' | 'toggle' | 'latest') => void;
@@ -25,7 +24,7 @@ export const VersionFooter = ({
   documents,
   currentVersionIndex,
 }: VersionFooterProps) => {
-  const { block } = useBlock();
+  const { artifact } = useArtifact();
 
   const { width } = useWindowSize();
   const isMobile = width < 768;
@@ -56,9 +55,9 @@ export const VersionFooter = ({
           onClick={async () => {
             setIsMutating(true);
 
-            await mutate(
-              `/api/document?id=${block.documentId}`,
-              await fetch(`/api/document?id=${block.documentId}`, {
+            mutate(
+              `/api/document?id=${artifact.documentId}`,
+              await fetch(`/api/document?id=${artifact.documentId}`, {
                 method: 'PATCH',
                 body: JSON.stringify({
                   timestamp: getDocumentTimestampByIndex(

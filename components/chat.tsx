@@ -12,14 +12,14 @@ import { ChatHeader } from '@/components/chat-header';
 import type { Vote, Chat } from '@/lib/db/schema';
 import { fetcher, generateUUID, getMessageIdFromAnnotations } from '@/lib/utils';
 
-import { Block } from './block';
+import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
+import { useArtifactSelector } from '@/hooks/use-artifact';
 import type { ImageData } from "@/lib/ai";
 import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
 import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
-import { useBlockSelector } from '@/hooks/use-block';
 import { toast } from 'sonner';
 
 export function Chat({
@@ -235,7 +235,7 @@ export function Chat({
   );
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
-  const isBlockVisible = useBlockSelector((state) => state.isVisible);
+  const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
   return (
     <>
@@ -256,7 +256,7 @@ export function Chat({
           editMessage={editMessage}
           changeBranch={changeBranch}
           isReadonly={isReadonly}
-          isBlockVisible={isBlockVisible}
+          isArtifactVisible={isArtifactVisible}
           isNewConversation={isNewConversationState}
           selectedModelId={selectedModelId}
         />
@@ -280,7 +280,7 @@ export function Chat({
         </form>
       </div>
 
-      <Block
+      <Artifact
         chatId={id}
         input={input}
         setInput={setInput}

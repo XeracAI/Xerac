@@ -33,8 +33,8 @@ import {
   StopIcon,
   SummarizeIcon,
 } from './icons';
-import { blockDefinitions, BlockKind } from './block';
-import { BlockToolbarItem } from './create-block';
+import { artifactDefinitions, ArtifactKind } from './artifact';
+import { ArtifactToolbarItem } from './create-artifact';
 import { UseChatHelpers } from 'ai/react';
 
 type ToolProps = {
@@ -269,7 +269,7 @@ export const Tools = ({
   ) => Promise<string | null | undefined>;
   isAnimating: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
-  tools: Array<BlockToolbarItem>;
+  tools: Array<ArtifactToolbarItem>;
 }) => {
   const [primaryTool, ...secondaryTools] = tools;
 
@@ -318,7 +318,7 @@ const PureToolbar = ({
   isLoading,
   stop,
   setMessages,
-  blockKind,
+  artifactKind,
 }: {
   isToolbarVisible: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
@@ -329,7 +329,7 @@ const PureToolbar = ({
   ) => Promise<string | null | undefined>;
   stop: () => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
-  blockKind: BlockKind;
+  artifactKind: ArtifactKind;
 }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -373,17 +373,17 @@ const PureToolbar = ({
     }
   }, [isLoading, setIsToolbarVisible]);
 
-  const blockDefinition = blockDefinitions.find(
-    (definition) => definition.kind === blockKind,
+  const artifactDefinition = artifactDefinitions.find(
+    (definition) => definition.kind === artifactKind,
   );
 
-  if (!blockDefinition) {
-    throw new Error('Block definition not found!');
+  if (!artifactDefinition) {
+    throw new Error('Artifact definition not found!');
   }
 
-  const toolsByBlockKind = blockDefinition.toolbar;
+  const toolsByArtifactKind = artifactDefinition.toolbar;
 
-  if (toolsByBlockKind.length === 0) {
+  if (toolsByArtifactKind.length === 0) {
     return null;
   }
 
@@ -405,7 +405,7 @@ const PureToolbar = ({
               : {
                   opacity: 1,
                   y: 0,
-                  height: toolsByBlockKind.length * 50,
+                  height: toolsByArtifactKind.length * 50,
                   transition: { delay: 0 },
                   scale: 1,
                 }
@@ -462,7 +462,7 @@ const PureToolbar = ({
             selectedTool={selectedTool}
             setIsToolbarVisible={setIsToolbarVisible}
             setSelectedTool={setSelectedTool}
-            tools={toolsByBlockKind}
+            tools={toolsByArtifactKind}
           />
         )}
       </motion.div>
@@ -473,7 +473,7 @@ const PureToolbar = ({
 export const Toolbar = memo(PureToolbar, (prevProps, nextProps) => {
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.isToolbarVisible !== nextProps.isToolbarVisible) return false;
-  if (prevProps.blockKind !== nextProps.blockKind) return false;
+  if (prevProps.artifactKind !== nextProps.artifactKind) return false;
 
   return true;
 });

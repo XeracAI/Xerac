@@ -14,7 +14,7 @@ interface MessagesProps {
   editMessage?: (messageId: string, newContent: string) => void;
   changeBranch: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
-  isBlockVisible: boolean;
+  isArtifactVisible: boolean;
   selectedModelId: string;
   isNewConversation: boolean;
 }
@@ -72,7 +72,7 @@ function PureMessages({
 export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
   return false;
-  if (prevProps.isBlockVisible && nextProps.isBlockVisible) return true;
+  if (prevProps.isArtifactVisible && nextProps.isArtifactVisible) return true;
 
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.isLoading && nextProps.isLoading) return false;
