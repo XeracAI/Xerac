@@ -6,7 +6,8 @@ import { Chat } from '@/components/chat';
 import { DEFAULT_MODEL_NAME, models } from '@/lib/ai/models';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
-import type {Metadata} from "next";
+import { DataStreamHandler } from '@/components/data-stream-handler';
+import type { Metadata } from "next";
 
 type Props = {
   params: Promise<{ id: string }>
@@ -47,7 +48,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }
   }
 
-  const messagesFromDb = await getMessagesByChatId({ id });
+  const messagesFromDb = await getMessagesByChatId({
+    id,
+  });
 
   const cookieStore = await cookies();
   const modelIdFromCookie = cookieStore.get('model-id')?.value;
@@ -56,12 +59,15 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     DEFAULT_MODEL_NAME;
 
   return (
-    <Chat
-      id={chat.id}
-      initialMessages={convertToUIMessages(messagesFromDb)}
-      selectedModelId={selectedModelId}
-      selectedVisibilityType={chat.visibility}
-      isReadonly={session?.user?.id !== chat.userId}
-    />
+    <>
+      <Chat
+        id={chat.id}
+        initialMessages={convertToUIMessages(messagesFromDb)}
+        selectedChatModel={selectedModelId}
+        selectedVisibilityType={chat.visibility}
+        isReadonly={session?.user?.id !== chat.userId}
+      />
+      <DataStreamHandler id={id} />
+    </>
   );
 }

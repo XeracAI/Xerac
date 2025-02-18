@@ -2,14 +2,20 @@
 
 import type { Message } from 'ai';
 import cx from 'classnames';
-import { motion } from 'framer-motion';
-import { memo, useState, type Dispatch, type SetStateAction } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { memo, useMemo, useState } from 'react';
 
 import type { Vote } from '@/lib/db/schema';
 
-import type { UIBlock } from './block';
 import { DocumentToolCall, DocumentToolResult } from './document';
-import { PencilEditIcon, SparklesIcon, LeftArrowIcon, RightArrowIcon } from './icons';
+import {
+  ChevronDownIcon,
+  LoaderIcon,
+  PencilEditIcon,
+  SparklesIcon,
+  LeftArrowIcon,
+  RightArrowIcon,
+} from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -18,6 +24,8 @@ import equal from 'fast-deep-equal';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
+import { DocumentPreview } from './document-preview';
+import { MessageReasoning } from './message-reasoning';
 import { cn, checkEnglishString } from "@/lib/utils";
 import { models } from "@/lib/ai/models";
 import Image from "next/image";
@@ -25,8 +33,6 @@ import Image from "next/image";
 const PurePreviewMessage = ({
   chatId,
   message,
-  block,
-  setBlock,
   vote,
   isLoading,
   editMessage,
@@ -35,8 +41,6 @@ const PurePreviewMessage = ({
 }: {
   chatId: string;
   message: Message;
-  block: UIBlock;
-  setBlock: Dispatch<SetStateAction<UIBlock>>;
   vote: Vote | undefined;
   isLoading: boolean;
   editMessage?: (messageId: string, newContent: string) => void;
@@ -56,115 +60,123 @@ const PurePreviewMessage = ({
   const siblingIndex = siblings.indexOf(message.serverId ?? message.id)
 
   return (
-    <motion.div
-      className="w-full mx-auto max-w-3xl px-4 group/message"
-      initial={{ x: 5, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -5, opacity: 0 }}
-      data-role={message.role}
-    >
-      <div
-        className={cn(
-          'flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
-          {
-            'w-full': mode === 'edit',
-            'group-data-[role=user]/message:w-fit': mode !== 'edit',
-          },
-        )}
+    <AnimatePresence>
+      <motion.div
+        className="w-full mx-auto max-w-3xl px-4 group/message"
+        initial={{ x: 5, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: -5, opacity: 0 }}
+        data-role={message.role}
       >
-        {message.role === 'assistant' && (
-          <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
+        <div
+          className={cn(
+            'flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
             {
-              model ? (
-                <>
-                  <Image src={model.icon.light} alt={model.label} width={18} height={18} className="dark:hidden" />
-                  <Image src={model.icon.dark} alt={model.label} width={18} height={18} className="hidden dark:block" />
-                </>
-              ) : (
-                <SparklesIcon size={14} />
-              )
-            }
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2 w-full">
-          {message.experimental_attachments && (
-            <div className="flex flex-row justify-end gap-2">
-              {message.experimental_attachments.map((attachment) => (
-                <PreviewAttachment
-                  key={attachment.url}
-                  attachment={attachment}
-                />
-              ))}
+              'w-full': mode === 'edit',
+              'group-data-[role=user]/message:w-fit': mode !== 'edit',
+            },
+          )}
+        >
+          {message.role === 'assistant' && (
+            <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
+              {
+                model ? (
+                  <>
+                    <Image src={model.icon.light} alt={model.label} width={18} height={18} className="dark:hidden" />
+                    <Image src={model.icon.dark} alt={model.label} width={18} height={18} className="hidden dark:block" />
+                  </>
+                ) : (
+                  <SparklesIcon size={14} />
+                )
+              }
             </div>
           )}
 
-          {message.content && mode === 'view' && (
-            <>
-              <div className="flex flex-row gap-2 items-center mb-1">
-                <div
-                  className={cn('flex flex-col gap-4', {
-                    'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
-                      message.role === 'user',
-                  })}
-                  style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
-                >
-                  <Markdown>{message.content as string}</Markdown>
-                </div>
-
-                {message.role === 'user' && !isReadonly && editMessage !== undefined && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
-                        onClick={() => {
-                          setMode('edit');
-                        }}
-                      >
-                        <PencilEditIcon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>ویرایش پیام</TooltipContent>
-                  </Tooltip>
-                )}
+          <div className="flex flex-col gap-4 w-full">
+            {message.experimental_attachments && (
+              <div className="flex flex-row justify-end gap-2">
+                {message.experimental_attachments.map((attachment) => (
+                  <PreviewAttachment
+                    key={attachment.url}
+                    attachment={attachment}
+                  />
+                ))}
               </div>
+            )}
 
-              {selectSibling !== undefined && siblings.length > 1 && (
-                <div className='flex items-center'>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="p-1 h-fit rounded-md text-muted-foreground"
-                        onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex - 1])}
-                        disabled={siblingIndex === 0}
-                      >
-                        <RightArrowIcon size={12} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>پیام قبلی</TooltipContent>
-                  </Tooltip>
+            {message.reasoning && (
+              <MessageReasoning
+                isLoading={isLoading}
+                reasoning={message.reasoning}
+              />
+            )}
 
-                  <div className="px-0.5 pt-0.5 text-xs">{siblingIndex + 1}/{siblings.length}</div>
+            {(message.content || message.reasoning) && mode === 'view' && (
+              <>
+                <div className="flex flex-row gap-2 items-center mb-1">
+                  <div
+                    className={cn('flex flex-col gap-4', {
+                      'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                        message.role === 'user',
+                    })}
+                    style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
+                  >
+                    <Markdown>{message.content as string}</Markdown>
+                  </div>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="p-1 h-fit rounded-md text-muted-foreground"
-                        onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex + 1])}
-                        disabled={siblingIndex === siblings.length - 1}
-                      >
-                        <LeftArrowIcon size={12} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>پیام بعدی</TooltipContent>
-                  </Tooltip>
+                  {message.role === 'user' && !isReadonly && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
+                          onClick={() => {
+                            setMode('edit');
+                          }}
+                        >
+                          <PencilEditIcon />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>ویرایش پیام</TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
-              )}
-            </>
-          )}
+
+                {selectSibling !== undefined && siblings.length > 1 && (
+                  <div className='flex items-center'>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="p-1 h-fit rounded-md text-muted-foreground"
+                          onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex - 1])}
+                          disabled={siblingIndex === 0}
+                        >
+                          <RightArrowIcon size={12} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>پیام قبلی</TooltipContent>
+                    </Tooltip>
+
+                    <div className="px-0.5 pt-0.5 text-xs">{siblingIndex + 1}/{siblings.length}</div>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="p-1 h-fit rounded-md text-muted-foreground"
+                          onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex + 1])}
+                          disabled={siblingIndex === siblings.length - 1}
+                        >
+                          <LeftArrowIcon size={12} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>پیام بعدی</TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
+              </>
+            )}
 
           {message.content && mode === 'edit' && editMessage !== undefined && (
             <div className="flex flex-row gap-2 items-start">
@@ -179,98 +191,85 @@ const PurePreviewMessage = ({
             </div>
           )}
 
-          {message.toolInvocations && message.toolInvocations.length > 0 && (
-            <div className="flex flex-col gap-4">
-              {message.toolInvocations.map((toolInvocation) => {
-                const { toolName, toolCallId, state, args } = toolInvocation;
+            {message.toolInvocations && message.toolInvocations.length > 0 && (
+              <div className="flex flex-col gap-4">
+                {message.toolInvocations.map((toolInvocation) => {
+                  const { toolName, toolCallId, state, args } = toolInvocation;
 
-                if (state === 'result') {
-                  const { result } = toolInvocation;
+                  if (state === 'result') {
+                    const { result } = toolInvocation;
 
+                    return (
+                      <div key={toolCallId}>
+                        {toolName === 'getWeather' ? (
+                          <Weather weatherAtLocation={result} />
+                        ) : toolName === 'createDocument' ? (
+                          <DocumentPreview
+                            isReadonly={isReadonly}
+                            result={result}
+                          />
+                        ) : toolName === 'updateDocument' ? (
+                          <DocumentToolResult
+                            type="update"
+                            result={result}
+                            isReadonly={isReadonly}
+                          />
+                        ) : toolName === 'requestSuggestions' ? (
+                          <DocumentToolResult
+                            type="request-suggestions"
+                            result={result}
+                            isReadonly={isReadonly}
+                          />
+                        ) : (
+                          <pre>{JSON.stringify(result, null, 2)}</pre>
+                        )}
+                      </div>
+                    );
+                  }
                   return (
-                    <div key={toolCallId}>
+                    <div
+                      key={toolCallId}
+                      className={cx({
+                        skeleton: ['getWeather'].includes(toolName),
+                      })}
+                    >
                       {toolName === 'getWeather' ? (
-                        <Weather weatherAtLocation={result} />
+                        <Weather />
                       ) : toolName === 'createDocument' ? (
-                        <DocumentToolResult
-                          type="create"
-                          result={result}
-                          block={block}
-                          setBlock={setBlock}
-                          isReadonly={isReadonly}
-                        />
+                        <DocumentPreview isReadonly={isReadonly} args={args} />
                       ) : toolName === 'updateDocument' ? (
-                        <DocumentToolResult
+                        <DocumentToolCall
                           type="update"
-                          result={result}
-                          block={block}
-                          setBlock={setBlock}
+                          args={args}
                           isReadonly={isReadonly}
                         />
                       ) : toolName === 'requestSuggestions' ? (
-                        <DocumentToolResult
+                        <DocumentToolCall
                           type="request-suggestions"
-                          result={result}
-                          block={block}
-                          setBlock={setBlock}
+                          args={args}
                           isReadonly={isReadonly}
                         />
-                      ) : (
-                        <pre>{JSON.stringify(result, null, 2)}</pre>
-                      )}
+                      ) : null}
                     </div>
                   );
-                }
-                return (
-                  <div
-                    key={toolCallId}
-                    className={cx({
-                      skeleton: ['getWeather'].includes(toolName),
-                    })}
-                  >
-                    {toolName === 'getWeather' ? (
-                      <Weather />
-                    ) : toolName === 'createDocument' ? (
-                      <DocumentToolCall
-                        type="create"
-                        args={args}
-                        setBlock={setBlock}
-                        isReadonly={isReadonly}
-                      />
-                    ) : toolName === 'updateDocument' ? (
-                      <DocumentToolCall
-                        type="update"
-                        args={args}
-                        setBlock={setBlock}
-                        isReadonly={isReadonly}
-                      />
-                    ) : toolName === 'requestSuggestions' ? (
-                      <DocumentToolCall
-                        type="request-suggestions"
-                        args={args}
-                        setBlock={setBlock}
-                        isReadonly={isReadonly}
-                      />
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                })}
+              </div>
+            )}
 
-          {!isReadonly && (
-            <MessageActions
-              key={`action-${message.id}`}
-              chatId={chatId}
-              message={message}
-              vote={vote}
-              model={model?.label || "Loading..."}
-              isLoading={isLoading}
-            />
-          )}
+            {!isReadonly && (
+              <MessageActions
+                key={`action-${message.id}`}
+                chatId={chatId}
+                message={message}
+                vote={vote}
+                model={model?.label || "Loading..."}
+                isLoading={isLoading}
+              />
+            )}
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
@@ -280,6 +279,8 @@ export const PreviewMessage = memo(
     // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
     return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
+    if (prevProps.message.reasoning !== nextProps.message.reasoning)
+      return false;
     if (prevProps.message.content !== nextProps.message.content) return false;
     if (
       !equal(

@@ -1,6 +1,5 @@
 import type {
   CoreAssistantMessage,
-  CoreMessage,
   CoreToolMessage,
   Message,
   ToolContent,
@@ -102,6 +101,7 @@ export function convertToUIMessages(
     }
 
     let textContent = '';
+    let reasoning: string | undefined = undefined;
     const toolInvocations: Array<ToolInvocation> = [];
 
     if (typeof message.content === 'string') {
@@ -117,6 +117,8 @@ export function convertToUIMessages(
             toolName: content.toolName,
             args: content.args,
           });
+        } else if (content.type === 'reasoning') {
+          reasoning = content.reasoning;
         }
       }
     }
@@ -134,11 +136,11 @@ export function convertToUIMessages(
         const lastAssistantMessage = messages
           .slice(0, messages.indexOf(message))
           .reverse()
-          .find((m) => 
-            m.role === 'assistant' && 
+          .find((m) =>
+            m.role === 'assistant' &&
             Array.isArray(m.content) &&
-            m.content.some(c => 
-              c.type === 'tool-call' && 
+            m.content.some(c =>
+              c.type === 'tool-call' &&
               toolCallIds.includes(c.toolCallId)
             )
           );
@@ -167,6 +169,7 @@ export function convertToUIMessages(
       id: message._id.toString(),
       role: message.role as Message['role'],
       content: textContent,
+      reasoning,
       toolInvocations,
 
       annotations,
@@ -183,9 +186,16 @@ export function convertToUIMessages(
   return chatMessages;
 }
 
-export function sanitizeResponseMessages(
-  messages: Array<CoreToolMessage | CoreAssistantMessage>,
-): Array<CoreToolMessage | CoreAssistantMessage> {
+type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
+type ResponseMessage = ResponseMessageWithoutId & { id: string };
+
+export function sanitizeResponseMessages({
+  messages,
+  reasoning,
+}: {
+  messages: Array<ResponseMessage>;
+  reasoning: string | undefined;
+}) {
   const toolResultIds: Array<string> = [];
 
   for (const message of messages) {
@@ -210,6 +220,11 @@ export function sanitizeResponseMessages(
           ? content.text.length > 0
           : true,
     );
+
+    if (reasoning) {
+      // @ts-expect-error: reasoning message parts in sdk is wip
+      sanitizedContent.push({ type: 'reasoning', reasoning });
+    }
 
     return {
       ...message,

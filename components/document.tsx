@@ -1,37 +1,42 @@
-import { memo, type SetStateAction } from 'react';
+import { memo } from 'react';
 
-import type { UIBlock } from './block';
+import type { BlockKind } from './block';
 import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from './icons';
 import { toast } from 'sonner';
+import { useBlock } from '@/hooks/use-block';
 import {checkEnglishString} from '@/lib/utils'
 
-const getActionText = (type: 'create' | 'update' | 'request-suggestions', tense: 'present' | 'past') => {
+const getActionText = (
+  type: 'create' | 'update' | 'request-suggestions',
+  tense: 'present' | 'past',
+) => {
   switch (type) {
     case 'create':
-      return tense === 'present' ? 'Creating' : 'Created'
+      return tense === 'present' ? 'Creating' : 'Created';
     case 'update':
-      return tense === 'present' ? 'Updating' : 'Updated'
+      return tense === 'present' ? 'Updating' : 'Updated';
     case 'request-suggestions':
-      return tense === 'present' ? 'Adding suggestions' : 'Added suggestions to'
+      return tense === 'present'
+        ? 'Adding suggestions'
+        : 'Added suggestions to';
     default:
-      return null
+      return null;
   }
-}
+};
 
 interface DocumentToolResultProps {
   type: 'create' | 'update' | 'request-suggestions';
-  result: { id: string; title: string };
-  block: UIBlock;
-  setBlock: (value: SetStateAction<UIBlock>) => void;
+  result: { id: string; title: string; kind: BlockKind };
   isReadonly: boolean;
 }
 
 function PureDocumentToolResult({
   type,
   result,
-  setBlock,
   isReadonly,
 }: DocumentToolResultProps) {
+  const { setBlock } = useBlock();
+
   return (
     <button
       type="button"
@@ -51,17 +56,17 @@ function PureDocumentToolResult({
           left: rect.left,
           width: rect.width,
           height: rect.height,
-        }
+        };
 
         setBlock({
-          type: 'document',
           documentId: result.id,
+          kind: result.kind,
           content: '',
           title: result.title,
           isVisible: true,
           status: 'idle',
           boundingBox,
-        })
+        });
       }}
     >
       <div className="text-muted-foreground mt-[2]">
@@ -77,7 +82,7 @@ function PureDocumentToolResult({
         {`${getActionText(type, 'past')} "${result.title}"`}
       </div>
     </button>
-  )
+  );
 }
 
 export const DocumentToolResult = memo(PureDocumentToolResult, () => true);
@@ -85,16 +90,16 @@ export const DocumentToolResult = memo(PureDocumentToolResult, () => true);
 interface DocumentToolCallProps {
   type: 'create' | 'update' | 'request-suggestions';
   args: { title: string };
-  setBlock: (value: SetStateAction<UIBlock>) => void;
   isReadonly: boolean;
 }
 
 function PureDocumentToolCall({
   type,
   args,
-  setBlock,
   isReadonly,
 }: DocumentToolCallProps) {
+  const { setBlock } = useBlock();
+
   return (
     <button
       type="button"
@@ -114,26 +119,34 @@ function PureDocumentToolCall({
           left: rect.left,
           width: rect.width,
           height: rect.height,
-        }
+        };
 
         setBlock((currentBlock) => ({
           ...currentBlock,
           isVisible: true,
           boundingBox,
-        }))
+        }));
       }}
     >
       <div className="flex flex-row gap-3 items-start">
-        <div className="text-zinc-500 mt-[2]">
-          {type === 'create' ? <FileIcon /> : type === 'update' ? <PencilEditIcon /> : type === 'request-suggestions' ? <MessageIcon /> : null}
+        <div className="text-zinc-500 mt-1">
+          {type === 'create' ? (
+            <FileIcon />
+          ) : type === 'update' ? (
+            <PencilEditIcon />
+          ) : type === 'request-suggestions' ? (
+            <MessageIcon />
+          ) : null}
         </div>
 
-        <div className="text-left">{`${getActionText(type, 'present')} ${args.title ? `"${args.title}"` : ''}`}</div>
+        <div className="text-left">
+          {`${getActionText(type, 'present')} ${args.title ? `"${args.title}"` : ''}`}
+        </div>
       </div>
 
       <div className="animate-spin mt-1">{<LoaderIcon />}</div>
     </button>
-  )
+  );
 }
 
 export const DocumentToolCall = memo(PureDocumentToolCall, () => true);

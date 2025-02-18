@@ -12,27 +12,27 @@ import { ChatHeader } from '@/components/chat-header';
 import type { Vote, Chat } from '@/lib/db/schema';
 import { fetcher, generateUUID, getMessageIdFromAnnotations } from '@/lib/utils';
 
-import { Block, type UIBlock } from './block';
-import { BlockStreamHandler } from './block-stream-handler';
+import { Block } from './block';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
-import { models } from "@/lib/ai/models";
 import type { ImageData } from "@/lib/ai";
 import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
 import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
+import { useBlockSelector } from '@/hooks/use-block';
+import { toast } from 'sonner';
 
 export function Chat({
   id,
   initialMessages,
-  selectedModelId,
+  selectedChatModel,
   selectedVisibilityType,
   isReadonly,
   isNewConversation = false,
 }: {
   id: string;
   initialMessages: Array<Message>;
-  selectedModelId: string;
+  selectedChatModel: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   isNewConversation?: boolean;
@@ -59,10 +59,10 @@ export function Chat({
     isLoading,
     stop,
     reload,
-    data: streamingData,
   } = useChat({
     id,
     initialMessages: constructDefaultBranchFromAIMessages(initialMessages),
+    experimental_throttle: 100,
     onFinish: async () => {
       await fetchAndUpdateChat(id);
       await updateCurrentChat();
@@ -100,6 +100,9 @@ export function Chat({
         parentId,
       };
     },
+    onError: (error) => {
+      toast.error('An error occured, please try again!');
+    },
   });
 
   const changeBranch = (nodeId: string, siblingId: string) => {
@@ -130,21 +133,6 @@ export function Chat({
   }
 
   const { width: windowWidth = 1920, height: windowHeight = 1080 } = useWindowSize();
-
-  const [block, setBlock] = useState<UIBlock>({
-    type: 'document',
-    documentId: 'init',
-    content: '',
-    title: '',
-    status: 'idle',
-    isVisible: false,
-    boundingBox: {
-      top: windowHeight / 4,
-      left: windowWidth / 4,
-      width: 250,
-      height: 50,
-    },
-  });
 
   const handleSubmitWrapper = (events?: { preventDefault?: () => void }, chatRequestOptions?: ChatRequestOptions): void => {
     setIsNewConversationState(false);
@@ -247,6 +235,7 @@ export function Chat({
   );
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
+  const isBlockVisible = useBlockSelector((state) => state.isVisible);
 
   return (
     <>
@@ -261,14 +250,13 @@ export function Chat({
 
         <Messages
           chatId={id}
-          block={block}
-          setBlock={setBlock}
           isLoading={isLoading}
           votes={votes}
           messages={messages}
           editMessage={editMessage}
           changeBranch={changeBranch}
           isReadonly={isReadonly}
+          isBlockVisible={isBlockVisible}
           isNewConversation={isNewConversationState}
           selectedModelId={selectedModelId}
         />
@@ -292,31 +280,23 @@ export function Chat({
         </form>
       </div>
 
-      <AnimatePresence>
-        {block?.isVisible && (
-          <Block
-            chatId={id}
-            input={input}
-            setInput={setInput}
-            handleSubmit={handleSubmitWrapper}
-            isLoading={isLoading}
-            stop={stop}
-            attachments={attachments}
-            setAttachments={setAttachments}
-            append={append}
-            block={block}
-            setBlock={setBlock}
-            messages={messages}
-            setMessages={setMessages}
-            editMessage={editMessage}
-            changeBranch={changeBranch}
-            votes={votes}
-            isReadonly={isReadonly}
-          />
-        )}
-      </AnimatePresence>
-
-      <BlockStreamHandler streamingData={streamingData} setBlock={setBlock} />
+      <Block
+        chatId={id}
+        input={input}
+        setInput={setInput}
+        handleSubmit={handleSubmitWrapper}
+        isLoading={isLoading}
+        stop={stop}
+        attachments={attachments}
+        setAttachments={setAttachments}
+        append={append}
+        messages={messages}
+        setMessages={setMessages}
+        editMessage={editMessage}
+        changeBranch={changeBranch}
+        votes={votes}
+        isReadonly={isReadonly}
+      />
     </>
   );
 }

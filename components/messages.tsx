@@ -2,30 +2,25 @@ import { Message } from 'ai';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Overview } from './overview';
-import { UIBlock } from './block';
-import { Dispatch, memo, SetStateAction } from 'react';
+import { memo } from 'react';
 import { Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
-import { AnimatePresence } from 'framer-motion';
 
 interface MessagesProps {
   chatId: string;
-  block: UIBlock;
-  setBlock: Dispatch<SetStateAction<UIBlock>>;
   isLoading: boolean;
   votes: Array<Vote> | undefined;
   messages: Array<Message>;
   editMessage?: (messageId: string, newContent: string) => void;
   changeBranch: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
+  isBlockVisible: boolean;
   selectedModelId: string;
   isNewConversation: boolean;
 }
 
 function PureMessages({
   chatId,
-  block,
-  setBlock,
   isLoading,
   votes,
   messages,
@@ -35,7 +30,8 @@ function PureMessages({
   selectedModelId,
   isNewConversation,
 }: MessagesProps) {
-  const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
+  const [messagesContainerRef, messagesEndRef] =
+    useScrollToBottom<HTMLDivElement>();
 
   return (
     <div
@@ -44,26 +40,22 @@ function PureMessages({
     >
       {isNewConversation && <Overview selectedModelId={selectedModelId} />}
 
-      <AnimatePresence>
-        {messages.map((message, index) => (
-          <PreviewMessage
-            key={message.id}
-            chatId={chatId}
-            message={message}
-            block={block}
-            setBlock={setBlock}
-            isLoading={isLoading && messages.length - 1 === index}
-            vote={
-              votes
-                ? votes.find((vote) => vote.messageId === (message.serverId ?? message.id))
-                : undefined
-            }
-            editMessage={editMessage}
-            selectSibling={changeBranch}
-            isReadonly={isReadonly}
-          />
-        ))}
-      </AnimatePresence>
+      {messages.map((message, index) => (
+        <PreviewMessage
+          key={message.id}
+          chatId={chatId}
+          message={message}
+          isLoading={isLoading && messages.length - 1 === index}
+          vote={
+            votes
+              ? votes.find((vote) => vote.messageId === message.id)
+              : undefined
+          }
+          editMessage={editMessage}
+          selectSibling={changeBranch}
+          isReadonly={isReadonly}
+        />
+      ))}
 
       {isLoading &&
         messages.length > 0 &&
@@ -80,6 +72,8 @@ function PureMessages({
 export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
   return false;
+  if (prevProps.isBlockVisible && nextProps.isBlockVisible) return true;
+
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.isLoading && nextProps.isLoading) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;

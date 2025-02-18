@@ -12,6 +12,7 @@ import {
   uniqueIndex,
   AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+import { blockKinds } from '../blocks/server';
 
 export const user = pgTable('User', {
   id: uuid().primaryKey().notNull().defaultRandom(),
@@ -88,6 +89,9 @@ export const document = pgTable(
     content: text('content'),
 
     createdAt: timestamp('createdAt').defaultNow().notNull(),
+    kind: varchar('text', { enum: ['text', 'code', 'image', 'sheet'] })
+      .notNull()
+      .default('text'),
   },
   (table) => {
     return {

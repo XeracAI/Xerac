@@ -106,11 +106,11 @@ export function headingRule(level: number) {
 export const handleTransaction = ({
   transaction,
   editorRef,
-  saveContent,
+  onSaveContent,
 }: {
   transaction: Transaction;
   editorRef: MutableRefObject<EditorView | null>;
-  saveContent: (updatedContent: string, debounce: boolean) => void;
+  onSaveContent: (updatedContent: string, debounce: boolean) => void;
 }) => {
   if (!editorRef || !editorRef.current) return;
 
@@ -121,9 +121,9 @@ export const handleTransaction = ({
     const updatedContent = buildContentFromDocument(newState.doc);
 
     if (transaction.getMeta('no-debounce')) {
-      saveContent(updatedContent, false);
+      onSaveContent(updatedContent, false);
     } else {
-      saveContent(updatedContent, true);
+      onSaveContent(updatedContent, true);
     }
   }
 };

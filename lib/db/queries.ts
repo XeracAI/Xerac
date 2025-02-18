@@ -1,11 +1,21 @@
 import 'server-only'
 
 import {genSaltSync, hashSync} from 'bcrypt-ts'
-import {and, asc, desc, eq, gt, lt, SQLWrapper} from 'drizzle-orm'
+import {and, asc, desc, eq, gt, lt, gte, inArray, SQLWrapper} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
-import {user, chat, type User, document, type SuggestionInsert, suggestion, vote, UserWithAllFields} from './schema'
+import {
+  user,
+  chat,
+  type User,
+  document,
+  type SuggestionInsert,
+  suggestion,
+  vote,
+  UserWithAllFields,
+} from './schema';
+import { BlockKind } from '@/components/block';
 
 import {IMessage, IMessageInsert, Message} from './mongoose-schema'
 import dbConnect from './connect'
@@ -300,11 +310,24 @@ export async function getVotesByChatId({id}: {id: string}) {
   }
 }
 
-export async function saveDocument({id, title, content, userId}: {id: string; title: string; content: string; userId: string}) {
+export async function saveDocument({
+  id,
+  title,
+  kind,
+  content,
+  userId,
+}: {
+  id: string;
+  title: string;
+  kind: BlockKind;
+  content: string;
+  userId: string;
+}) {
   try {
     return await db.insert(document).values({
       id,
       title,
+      kind,
       content,
       userId,
       createdAt: new Date(),

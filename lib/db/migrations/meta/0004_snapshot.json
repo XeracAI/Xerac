@@ -1,5 +1,5 @@
 {
-  "id": "dad5691d-7f6e-4ad8-b0cc-eeaca67f11de",
+  "id": "30ad8233-1432-428b-93fc-2bb1ba867ff1",
   "prevId": "011efa9e-42c7-4ff6-830a-02106f6638c9",
   "version": "7",
   "dialect": "postgresql",
@@ -58,10 +58,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     },
     "public.Document": {
       "name": "Document",
@@ -91,6 +88,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "text": {
+          "name": "text",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'text'"
         },
         "userId": {
           "name": "userId",
@@ -124,10 +128,7 @@
           ]
         }
       },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     },
     "public.Message": {
       "name": "Message",
@@ -156,43 +157,13 @@
           "name": "content",
           "type": "json",
           "primaryKey": false,
-          "notNull": false
-        },
-        "images": {
-          "name": "images",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "audios": {
-          "name": "audios",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "videos": {
-          "name": "videos",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "voice": {
-          "name": "voice",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
-        },
-        "model": {
-          "name": "model",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -212,10 +183,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     },
     "public.Suggestion": {
       "name": "Suggestion",
@@ -317,10 +285,7 @@
           ]
         }
       },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     },
     "public.User": {
       "name": "User",
@@ -349,10 +314,7 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     },
     "public.Vote": {
       "name": "Vote",
@@ -415,18 +377,12 @@
           ]
         }
       },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     }
   },
   "enums": {},
   "schemas": {},
   "sequences": {},
-  "roles": {},
-  "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},
