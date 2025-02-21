@@ -1,4 +1,8 @@
-<a href="https://xerac.org">
+# :warning: WORK IN PROGRESS
+
+---
+
+<a href="https://v2.xerac.ir">
   <img alt="Next.js 15/React 19 and App Router-ready AI chatbot." src="app/(chat)/chat/opengraph-image.png">
   <h1 align="center">Next.js AI Chatbot + Xerac</h1>
 </a>
@@ -72,6 +76,7 @@ Your app template should now be running on [localhost:3000](http://localhost:300
   - Voice mode (Coming soon)
 - Message editing and conversation branching
 - Infinite scroll pagination for chat history
+- Authentication with phone number + OTP verification
 
 ## Future Roadmap
 
