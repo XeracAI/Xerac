@@ -1,3 +1,8 @@
+import {
+  customProvider,
+} from 'ai';
+import { openai } from '@ai-sdk/openai';
+
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 
 import gptLogoBlack from '@/assets/icons/third-party-logos/providers/openai-black.svg';
@@ -9,7 +14,20 @@ import grokLogo from '@/assets/icons/third-party-logos/providers/grok.svg';
 import stabilityAiLogo from '@/assets/icons/third-party-logos/providers/stability-ai.svg';
 import leonardoAiLogo from '@/assets/icons/third-party-logos/providers/leonardo-ai.svg';
 
-export interface Model {
+export const DEFAULT_CHAT_MODEL: string = 'gpt-4o-mini';
+
+export const myProvider = customProvider({
+  languageModels: {
+    'title-model': openai('gpt-4-turbo'),
+    'artifact-model': openai('gpt-4o-mini'),
+  },
+  imageModels: {
+    'small-model': openai.image('dall-e-2'),
+    'large-model': openai.image('dall-e-3'),
+  },
+});
+
+interface Model {
   id: string;
   label: string;
   apiIdentifier: string;
@@ -226,5 +244,3 @@ export const modelGroups: Array<ModelGroup> = [
     ).filter(model => !!model),
   }
 ];
-
-export const DEFAULT_MODEL_NAME: string = 'gpt-4o-mini';

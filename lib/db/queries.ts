@@ -1,7 +1,7 @@
 import 'server-only'
 
 import {genSaltSync, hashSync} from 'bcrypt-ts'
-import {and, asc, desc, eq, gt, lt, gte, inArray, SQLWrapper} from 'drizzle-orm'
+import {and, asc, desc, eq, gt, lt, SQLWrapper} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
@@ -64,6 +64,8 @@ export async function getUser(phoneNumber: string, countryCode: string): Promise
         referralCode: user.referralCode,
         referrer: user.referrer,
         referrerDiscountUsed: user.referrerDiscountUsed,
+
+        dateCreated: user.dateCreated,
       })
       .from(user)
       .where(and(eq(user.phoneNumber, phoneNumber), eq(user.countryCode, countryCode)))

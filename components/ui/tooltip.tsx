@@ -40,7 +40,7 @@ export const BetterTooltip = ({
   align?: 'center' | 'end' | 'start';
 }) => {
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={500}>
       <Tooltip {...props}>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
         <TooltipContent align={align}>{content}</TooltipContent>

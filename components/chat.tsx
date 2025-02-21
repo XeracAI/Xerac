@@ -1,9 +1,8 @@
 'use client';
 
 import type { Attachment, ChatRequestOptions, Message } from 'ai';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { generateId } from "@ai-sdk/ui-utils";
-import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { useWindowSize } from 'usehooks-ts';
@@ -16,7 +15,8 @@ import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
-import { useArtifactSelector } from '@/hooks/use-artifact';
+import { models } from "@/lib/ai/models";
+import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
 import type { ImageData } from "@/lib/ai";
 import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
 import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
