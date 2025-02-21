@@ -54,7 +54,7 @@ const PurePreviewMessage = ({
     model = models.find((model) => model.id === modelId);
   }
 
-  const {siblings = []} = message
+  const { siblings = [] } = message
   const siblingIndex = siblings.indexOf(message.serverId ?? message.id)
 
   return (
@@ -114,7 +114,7 @@ const PurePreviewMessage = ({
                 <div className="flex flex-row gap-2 items-center mb-1">
                   <div
                     className={cn('flex flex-col gap-4', {
-                      'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                      'bg-primary text-primary-foreground px-3 py-2 rounded-tl-xl rounded-bl-xl rounded-tr-[20px] rounded-br-sm ml-auto':
                         message.role === 'user',
                     })}
                     style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
@@ -176,18 +176,18 @@ const PurePreviewMessage = ({
               </>
             )}
 
-          {message.content && mode === 'edit' && editMessage !== undefined && (
-            <div className="flex flex-row gap-2 items-start">
-              <div className="size-8" />
+            {message.content && mode === 'edit' && editMessage !== undefined && (
+              <div className="flex flex-row gap-2 items-start">
+                <div className="size-8" />
 
-              <MessageEditor
-                key={message.id}
-                message={message}
-                setMode={setMode}
-                editMessage={editMessage}
-              />
-            </div>
-          )}
+                <MessageEditor
+                  key={message.id}
+                  message={message}
+                  setMode={setMode}
+                  editMessage={editMessage}
+                />
+              </div>
+            )}
 
             {message.toolInvocations && message.toolInvocations.length > 0 && (
               <div className="flex flex-col gap-4">
