@@ -56,9 +56,10 @@ export function Chat({
     input,
     setInput,
     append,
-    isLoading,
+    status,
     stop,
     reload,
+    data: streamingData,
   } = useChat({
     id,
     initialMessages: constructDefaultBranchFromAIMessages(initialMessages),
@@ -67,7 +68,6 @@ export function Chat({
       await fetchAndUpdateChat(id);
       await updateCurrentChat();
     },
-    // @ts-expect-error JSONValue does not understand Message type
     experimental_prepareRequestBody({messages}) {
       if (messages.length === 0) {
         throw Error("Empty message array!");
@@ -89,7 +89,7 @@ export function Chat({
 
       return {
         id,
-        modelId: selectedModelId,
+        modelId: selectedChatModel,
         message: {
           role: message.role,
           content: message.content,
@@ -101,9 +101,10 @@ export function Chat({
       };
     },
     onError: (error) => {
-      toast.error('An error occured, please try again!');
+      toast.error(`An error occured: ${error.message}, please try again!`);
     },
   });
+  const { setArtifact } = useArtifact();
 
   const changeBranch = (nodeId: string, siblingId: string) => {
     const branch = cutBranchUntilNode(nodeId, messages);
@@ -136,7 +137,7 @@ export function Chat({
 
   const handleSubmitWrapper = (events?: { preventDefault?: () => void }, chatRequestOptions?: ChatRequestOptions): void => {
     setIsNewConversationState(false);
-    const selectedModel = models.find((model) => model.id === selectedModelId)
+    const selectedModel = models.find((model) => model.id === selectedChatModel)
 
     switch (selectedModel?.output) {
       case undefined:
@@ -154,7 +155,7 @@ export function Chat({
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({id, modelId: selectedModelId, messages: [newMessage]})
+            body: JSON.stringify({id, modelId: selectedChatModel, messages: [newMessage]})
           }
         ).then((response) => response.json()).then((responseData: ImageData) => {
           let documentId, content;
@@ -168,8 +169,8 @@ export function Chat({
             content = `data:image/png;base64,${responseData.b64_json}`
           }
 
-          setBlock({
-            type: 'image',
+          setArtifact({
+            kind: 'image',
             documentId,
             content,
             title: '', // TODO replace with generated title after it was handled
@@ -243,14 +244,14 @@ export function Chat({
         <ChatHeader
           chatId={id}
           chat={currentChat}
-          selectedModelId={selectedModelId}
+          selectedModelId={selectedChatModel}
           selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}
         />
 
         <Messages
           chatId={id}
-          isLoading={isLoading}
+          isLoading={status === 'submitted' || status === 'streaming'}
           votes={votes}
           messages={messages}
           editMessage={editMessage}
@@ -258,7 +259,7 @@ export function Chat({
           isReadonly={isReadonly}
           isArtifactVisible={isArtifactVisible}
           isNewConversation={isNewConversationState}
-          selectedModelId={selectedModelId}
+          selectedModelId={selectedChatModel}
         />
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
@@ -268,7 +269,7 @@ export function Chat({
               input={input}
               setInput={setInput}
               handleSubmit={handleSubmitWrapper}
-              isLoading={isLoading}
+              isLoading={status === 'submitted' || status === 'streaming'}
               stop={stop}
               attachments={attachments}
               setAttachments={setAttachments}
@@ -285,7 +286,7 @@ export function Chat({
         input={input}
         setInput={setInput}
         handleSubmit={handleSubmitWrapper}
-        isLoading={isLoading}
+        isLoading={status === 'submitted' || status === 'streaming'}
         stop={stop}
         attachments={attachments}
         setAttachments={setAttachments}
