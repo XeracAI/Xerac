@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { Toaster } from 'sonner';
 
+import { Toaster } from '@/components/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
@@ -64,7 +64,7 @@ export default async function RootLayout({
           defaultTheme="system"
           enableSystem
         >
-          <Toaster position="top-center" toastOptions={{ style: { fontFamily: "Shabnam, ui-sans-serif, system-ui, -apple-system" } }} />
+          <Toaster />
           {children}
         </ThemeProvider>
       </body>
