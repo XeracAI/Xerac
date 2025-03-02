@@ -68,15 +68,17 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 
 ## Extra Features
 
+- Appropriate RTL support
+- Message editing and conversation branching
 - Support for different model providers via LiteLLM
 - Support for different modalities
   - Image generation
     - DALL-E
     - Leonardo AI (Coming soon)
-  - Voice mode (Coming soon)
-- Message editing and conversation branching
+  - Voice mode (WIP)
 - Infinite scroll pagination for chat history
 - Authentication with phone number + OTP verification
+- User limit (WIP, currently static limit)
 
 ## Future Roadmap
 
@@ -85,7 +87,7 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 - PDF (and other file types) support
   - Models that support it out-of-the-box will receive the file
   - Models that don't support it will receive a converted text version using [Markitdown](https://github.com/microsoft/markitdown)
-  - Image PDFs will can be converted to text using OCR models
+  - Image PDFs can be converted to text using OCR models
 - Input area notifications
 - Telemetry and analytics
   - Using Clickhouse and [Langwatch](https://langwatch.ai/)
@@ -95,3 +97,4 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 - Pro mode: a toggle to add more features for power users
   - Token count
   - Parameter tuning (e.g. temperature)
+  - Setting your own API key

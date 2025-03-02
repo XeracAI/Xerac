@@ -211,6 +211,7 @@ export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => prevProps.i
 
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
+  // FIXME useParams does not update when window.history.replaceState is used to change the URL
   const { id } = useParams();
 
   const [loadingChatId, setLoadingChatId] = useState<string | null>(null);

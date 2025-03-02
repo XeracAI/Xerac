@@ -118,6 +118,7 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
   const submitForm = useCallback(() => {
+    // FIXME useParams does not update when window.history.replaceState is used to change the URL
     window.history.replaceState({}, '', `/chat/${chatId}`);
 
     handleSubmit(undefined, {
