@@ -3,6 +3,7 @@
 import {
   memo,
   MouseEvent,
+  RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -102,7 +103,7 @@ export function DocumentPreview({
   return (
     <div className="relative w-full cursor-pointer">
       <HitboxLayer
-        hitboxRef={hitboxRef}
+        hitboxRef={hitboxRef as RefObject<HTMLDivElement>}
         result={result}
         setArtifact={setArtifact}
       />
@@ -146,7 +147,7 @@ const PureHitboxLayer = ({
   result,
   setArtifact,
 }: {
-  hitboxRef: React.RefObject<HTMLDivElement>;
+  hitboxRef: RefObject<HTMLDivElement>;
   result: any;
   setArtifact: (
     updaterFn: UIArtifact | ((currentArtifact: UIArtifact) => UIArtifact),
