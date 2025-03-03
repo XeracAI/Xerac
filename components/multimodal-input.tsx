@@ -258,11 +258,11 @@ function PureMultimodalInput({
         style={{ direction: checkEnglishString(input) ? "ltr" : "rtl" }}
       />
 
-      <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
+      <div className="absolute bottom-0 p-2 w-fit flex flex-row">
         <AttachmentsButton fileInputRef={fileInputRef} isLoading={isLoading} />
       </div>
 
-      <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
+      <div className="absolute bottom-0 end-0 p-2 w-fit flex flex-row">
         {isLoading ? (
           <StopButton stop={stop} setMessages={setMessages} />
         ) : (
