@@ -4,7 +4,7 @@ Build and push Docker image:
     # Additional options for Kaniko executor.
     # To enable caching use "--cache=true", Or if copy layers are small enough use "--cache=true --cache-copy-layers".
     # For more details see https://github.com/GoogleContainerTools/kaniko/blob/master/README.md#additional-flags
-    KANIKO_ARGS: "--cache=true --build-arg=POSTGRES_URL=${POSTGRES_URL}"
+    KANIKO_ARGS: "--cache=true --build-arg=POSTGRES_URL=${POSTGRES_URL} --build-arg=MINIO_ENDPOINT=${MINIO_ENDPOINT} --build-arg=MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY} --build-arg=MINIO_SECRET_KEY=${MINIO_SECRET_KEY}"
     KANIKO_BUILD_CONTEXT: $CI_PROJECT_DIR
   stage: build
   image:
