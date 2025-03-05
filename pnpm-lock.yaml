@@ -23,6 +23,9 @@ importers:
       '@ai-sdk/ui-utils':
         specifier: ^1.1.16
         version: 1.1.16(zod@3.24.2)
+      '@clickhouse/client':
+        specifier: ^1.10.1
+        version: 1.10.1
       '@codemirror/lang-javascript':
         specifier: ^6.2.2
         version: 6.2.3
@@ -423,6 +426,13 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
+
+  '@clickhouse/client-common@1.10.1':
+    resolution: {integrity: sha512-Duh3cign2ChvXABpjVj9Hkz5y20Zf48OE0Y50S4qBVPdhI81S4Rh4MI/bEwvwMnzHubSkiEQ+VhC5HzV8ybnpg==}
+
+  '@clickhouse/client@1.10.1':
+    resolution: {integrity: sha512-Ot/6l4hFALK6NtZDS2UegukfRXWkkftWHCnzKUwanpOQ3Jd+RVKx5dxQreeBG5XcRjt1xyf5904PFjbCnaulXg==}
+    engines: {node: '>=16'}
 
   '@codemirror/autocomplete@6.18.6':
     resolution: {integrity: sha512-PHHBXFomUs5DF+9tCOM/UoW6XQ4R44lLNNhRaW9PKPTU0D7lIjRg3ElxaJnTwsl/oHiR93WSXDBrekhoUGCPtg==}
@@ -4292,6 +4302,12 @@ snapshots:
 
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
+
+  '@clickhouse/client-common@1.10.1': {}
+
+  '@clickhouse/client@1.10.1':
+    dependencies:
+      '@clickhouse/client-common': 1.10.1
 
   '@codemirror/autocomplete@6.18.6':
     dependencies:

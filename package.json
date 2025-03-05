@@ -16,7 +16,8 @@
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
-    "db:up": "drizzle-kit up"
+    "db:up": "drizzle-kit up",
+    "setup-clickhouse": "tsx scripts/setup-clickhouse.ts"
   },
   "dependencies": {
     "@ai-sdk/fireworks": "^0.1.12",
@@ -24,6 +25,7 @@
     "@ai-sdk/provider": "^1.0.9",
     "@ai-sdk/react": "^1.1.19",
     "@ai-sdk/ui-utils": "^1.1.16",
+    "@clickhouse/client": "^1.10.1",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-python": "^6.1.6",
     "@codemirror/state": "^6.5.0",

@@ -79,6 +79,7 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 - Infinite scroll pagination for chat history
 - Authentication with phone number + OTP verification
 - User limit (WIP, currently static limit)
+- Clickhouse integration
 
 ## Future Roadmap
 
