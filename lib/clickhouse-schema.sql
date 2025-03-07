@@ -1,6 +1,8 @@
 -- Clickhouse Schema for Analytics
 -- These are optimized for analytics workloads with appropriate data types and partitioning
 
+CREATE DATABASE IF NOT EXISTS xerac_stats_v2;
+
 -- User Events Table
 -- Tracks user-related events like signups, logins, feature usage
 CREATE TABLE IF NOT EXISTS user_events (
@@ -16,7 +18,7 @@ CREATE TABLE IF NOT EXISTS user_events (
     properties String, -- JSON string with additional event-specific properties
     success Boolean DEFAULT true
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, user_id, event_type);
 
 -- Chat Analytics Table
@@ -37,7 +39,7 @@ CREATE TABLE IF NOT EXISTS chat_events (
     has_other_media UInt8 DEFAULT 0,
     properties String -- JSON string with additional properties
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, chat_id, event_time);
 
 -- Document Analytics Table
@@ -53,7 +55,7 @@ CREATE TABLE IF NOT EXISTS document_events (
     session_id String,
     properties String -- JSON string with additional properties
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, document_id, event_time);
 
 -- File Operations Analytics
@@ -71,7 +73,7 @@ CREATE TABLE IF NOT EXISTS file_events (
     gpt_token_count UInt32 DEFAULT 0,
     properties String -- JSON string with additional properties
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, user_id, event_time);
 
 -- Error Events
@@ -89,7 +91,7 @@ CREATE TABLE IF NOT EXISTS error_events (
     stack_trace String,
     properties String -- JSON string with additional properties
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, error_type, event_time);
 
 -- Performance Metrics
@@ -105,7 +107,7 @@ CREATE TABLE IF NOT EXISTS performance_metrics (
     session_id String,
     is_authenticated UInt8 DEFAULT 0
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, endpoint, event_time);
 
 -- Session Analytics
@@ -123,14 +125,14 @@ CREATE TABLE IF NOT EXISTS session_events (
     referrer String,
     properties String -- JSON string with additional properties
 ) ENGINE = MergeTree()
-PARTITION BY toYYYYMM(event_date)
+PARTITION BY toYYYYMMDD(event_date)
 ORDER BY (event_date, user_id, session_id, event_time);
 
 -- Aggregated User Metrics (daily rollup)
 -- Pre-aggregated table for dashboards and reports
 CREATE MATERIALIZED VIEW IF NOT EXISTS user_metrics_daily
 ENGINE = SummingMergeTree
-PARTITION BY toYYYYMM(date)
+PARTITION BY toYYYYMMDD(date)
 ORDER BY (date, user_id)
 AS SELECT
     toDate(event_date) AS date,
@@ -144,7 +146,7 @@ GROUP BY date, user_id;
 -- Aggregated Message Metrics (daily rollup)
 CREATE MATERIALIZED VIEW IF NOT EXISTS message_metrics_daily
 ENGINE = SummingMergeTree
-PARTITION BY toYYYYMM(date)
+PARTITION BY toYYYYMMDD(date)
 ORDER BY (date, model_id)
 AS SELECT
     toDate(event_date) AS date,
