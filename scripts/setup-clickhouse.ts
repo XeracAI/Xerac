@@ -15,7 +15,7 @@ async function setupClickhouse() {
 
   // Create Clickhouse client
   const client = createClient({
-    host: process.env.CLICKHOUSE_HOSTS || 'http://localhost:8123',
+    url: process.env.CLICKHOUSE_HOSTS || 'http://localhost:8123',
     username: process.env.CLICKHOUSE_USER || 'default',
     password: process.env.CLICKHOUSE_PASSWORD || '',
     request_timeout: parseInt(process.env.CLICKHOUSE_TIMEOUT || '100000'),
@@ -40,7 +40,7 @@ async function setupClickhouse() {
     const statements = schemaSQL
       .split(';')
       .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+      .filter(stmt => stmt.length > 0);
 
     // Execute each statement
     console.log('Creating schema...');

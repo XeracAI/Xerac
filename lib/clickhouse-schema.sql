@@ -135,13 +135,14 @@ ENGINE = SummingMergeTree
 PARTITION BY toYYYYMMDD(date)
 ORDER BY (date, user_id)
 AS SELECT
-    toDate(event_date) AS date,
-    user_id,
-    count() FILTER (WHERE event_type = 'login') AS login_count,
-    count() FILTER (WHERE event_type = 'signup') AS signup_count,
-    uniqExact(session_id) AS session_count
-FROM session_events
-GROUP BY date, user_id;
+    toDate(u.event_date) AS date,
+    u.user_id,
+    count() FILTER (WHERE u.event_type = 'login') AS login_count,
+    count() FILTER (WHERE u.event_type = 'signup') AS signup_count,
+    uniqExact(s.session_id) AS session_count
+FROM user_events AS u
+LEFT JOIN session_events AS s ON u.user_id = s.user_id AND toDate(u.event_date) = toDate(s.event_date)
+GROUP BY date, u.user_id;
 
 -- Aggregated Message Metrics (daily rollup)
 CREATE MATERIALIZED VIEW IF NOT EXISTS message_metrics_daily
