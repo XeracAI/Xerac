@@ -1,8 +1,6 @@
 -- Clickhouse Schema for Analytics
 -- These are optimized for analytics workloads with appropriate data types and partitioning
 
-CREATE DATABASE IF NOT EXISTS xerac_stats_v2;
-
 -- User Events Table
 -- Tracks user-related events like signups, logins, feature usage
 CREATE TABLE IF NOT EXISTS user_events (

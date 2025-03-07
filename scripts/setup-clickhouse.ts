@@ -14,10 +14,44 @@ async function setupClickhouse() {
   }
 
   // Create Clickhouse client
-  const client = createClient({
+  let client = createClient({
     url: process.env.CLICKHOUSE_HOSTS || 'http://localhost:8123',
     username: process.env.CLICKHOUSE_USER || 'default',
     password: process.env.CLICKHOUSE_PASSWORD || '',
+    request_timeout: parseInt(process.env.CLICKHOUSE_TIMEOUT || '100000'),
+  });
+
+  try {
+    console.log('Connecting to Clickhouse default database...');
+    // Test connection
+    const pingResult = await client.ping();
+    if (!pingResult.success) {
+      throw new Error('Failed to connect to Clickhouse');
+    }
+    console.log('Successfully connected to Clickhouse');
+
+    console.log(`Creating ${process.env.CLICKHOUSE_DATABASSE} database...`)
+    await client.exec({
+      query: `CREATE DATABASE IF NOT EXISTS ${process.env.CLICKHOUSE_DATABASSE}`,
+      clickhouse_settings: {
+        wait_end_of_query: 1
+      }
+    });
+
+    console.log(`✓ Successfully executed: ${process.env.CLICKHOUSE_DATABASSE}`);
+  } catch (error) {
+    console.error('Error setting up Clickhouse:', error);
+    process.exit(1);
+  } finally {
+    await client.close();
+  }
+
+  // Create Clickhouse client
+  client = createClient({
+    url: process.env.CLICKHOUSE_HOSTS || 'http://localhost:8123',
+    username: process.env.CLICKHOUSE_USER || 'default',
+    password: process.env.CLICKHOUSE_PASSWORD || '',
+    database: process.env.CLICKHOUSE_DATABASSE || 'xerac',
     request_timeout: parseInt(process.env.CLICKHOUSE_TIMEOUT || '100000'),
   });
 
