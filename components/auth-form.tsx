@@ -114,9 +114,12 @@ export function AuthForm({
 
     setIsLoading(true);
     try {
-      setIsLoading(await action(formData));
-    } catch (e) {
-      console.error(`Failed to authenticate user: ${e}`);
+      const result = await action(formData);
+      if (!result) {
+        // Handle error
+        setErrors(prev => ({ ...prev, form: 'خطایی رخ داد. لطفا دوباره تلاش کنید.' }));
+      }
+    } finally {
       setIsLoading(false);
     }
   };

@@ -3,8 +3,8 @@
 import { ChevronUp } from 'lucide-react';
 import Image from 'next/image';
 import type { User } from 'next-auth';
-import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
+import { trackSignOutAndSignOut } from '@/app/(auth)/signout-action';
 
 import {
   DropdownMenu,
@@ -21,6 +21,13 @@ import {
 
 export function SidebarUserNav({ user }: { user: User }) {
   const { setTheme, theme } = useTheme();
+
+  const handleSignOut = async () => {
+    if (user?.id) {
+      // Call the server action which will track the sign out event
+      await trackSignOutAndSignOut(user.id);
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -55,7 +62,7 @@ export function SidebarUserNav({ user }: { user: User }) {
               <button
                 type="button"
                 className="w-full cursor-pointer"
-                onClick={() => signOut({ redirectTo: '/chat' })}
+                onClick={handleSignOut}
               >
                 خروج
               </button>

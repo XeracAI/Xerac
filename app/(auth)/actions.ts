@@ -2,12 +2,15 @@
 
 import { z } from 'zod';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { headers } from 'next/headers';
 
 import { createUser, updateUserVerification, updateUserPassword, updateUserOTP, getUserWithAllFields, updateUserFailedTries, updateUserInfo, getUserByReferralCode } from '@/lib/db/queries';
 import { auth, signIn } from './auth';
 import { generateOTP } from '@/lib/otp/generate';
 import { sendSMS } from '@/lib/otp/deliver';
 import { compareSync } from 'bcrypt-ts';
+import { trackUserEvent } from '@/lib/analytics';
+import { getUserAnalyticsFromHeaders } from '@/lib/analytics-middleware';
 
 const phoneSchema = z.object({
   phone: z.string().transform((val) => parsePhoneNumberFromString(val, 'IR')).refine((val) => val?.isValid() ?? false, 'شماره موبایل نامعتبر است'),
@@ -47,6 +50,10 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
   try {
     const session = await auth();
 
+    // Get analytics data from headers
+    const headersList = await headers();
+    const analyticsData = getUserAnalyticsFromHeaders(headersList);
+
     const phone = formData.get('phone') as string;
     const otp = formData.get('otp') as string;
     const password = formData.get('password') as string;
@@ -69,6 +76,19 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
           phoneNumber: phoneNumber.nationalNumber,
           countryCode: phoneNumber.countryCallingCode,
         });
+
+        // Track signup event
+        await trackUserEvent({
+          userId: user.id,
+          eventType: 'signup',
+          deviceInfo: analyticsData.deviceInfo,
+          osInfo: analyticsData.osInfo,
+          browserInfo: analyticsData.browserInfo,
+          ipAddress: analyticsData.ipAddress,
+          properties: {
+            source: analyticsData.referrer || 'direct'
+          }
+        });
       }
 
       // If user's phone is not verified, newly created or has not set their password yet, send OTP
@@ -82,6 +102,17 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
           sendSMS(phoneNumber.number, otp),
           updateUserOTP(user.id, otp, new Date(Date.now() + 300000)),
         ]);
+
+        // Track OTP request event
+        await trackUserEvent({
+          userId: user.id,
+          eventType: 'otp_request',
+          deviceInfo: analyticsData.deviceInfo,
+          osInfo: analyticsData.osInfo,
+          browserInfo: analyticsData.browserInfo,
+          ipAddress: analyticsData.ipAddress,
+        });
+
         return { status: 'needs_verification' };
       }
 
@@ -134,6 +165,16 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
 
       await updateUserPassword(user.id, password1);
 
+      // Track password change event
+      await trackUserEvent({
+        userId: user.id,
+        eventType: 'password_change',
+        deviceInfo: analyticsData.deviceInfo,
+        osInfo: analyticsData.osInfo,
+        browserInfo: analyticsData.browserInfo,
+        ipAddress: analyticsData.ipAddress,
+      });
+
       return { status: (!user.firstName || !user.lastName) ? 'needs_name_set' : 'success' }
     }
 
@@ -151,9 +192,41 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
         }
 
         referrer = referrerUser.id
+
+        // Track referral used event
+        await trackUserEvent({
+          userId: user.id,
+          eventType: 'referral_used',
+          properties: {
+            referralCode,
+            referrerId: referrer
+          }
+        });
+
+        // Track referral created event for the referrer
+        await trackUserEvent({
+          userId: referrer,
+          eventType: 'referral_created',
+          properties: {
+            referredUserId: user.id
+          }
+        });
       }
 
       await updateUserInfo(user.id, firstName, lastName, referrer)
+
+      // Track profile update event
+      await trackUserEvent({
+        userId: user.id,
+        eventType: 'profile_update',
+        deviceInfo: analyticsData.deviceInfo,
+        osInfo: analyticsData.osInfo,
+        browserInfo: analyticsData.browserInfo,
+        ipAddress: analyticsData.ipAddress,
+        properties: {
+          fieldsUpdated: ['firstName', 'lastName']
+        }
+      });
 
       await signIn('credentials', {
         phoneNumber: user.phoneNumber, countryCode: user.countryCode,
@@ -173,6 +246,16 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
     await signIn('credentials', {
       phoneNumber: user.phoneNumber, countryCode: user.countryCode,
       redirect: false,
+    });
+
+    // Track login event
+    await trackUserEvent({
+      userId: user.id,
+      eventType: 'login',
+      deviceInfo: analyticsData.deviceInfo,
+      osInfo: analyticsData.osInfo,
+      browserInfo: analyticsData.browserInfo,
+      ipAddress: analyticsData.ipAddress,
     });
 
     return { status: (!user.firstName || !user.lastName) ? 'needs_name_set' : 'success' };
