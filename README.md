@@ -79,7 +79,8 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 - Infinite scroll pagination for chat history
 - Authentication with phone number + OTP verification
 - User limit (WIP, currently static limit)
-- Clickhouse integration
+- Telemetry and analytics
+  - Using Clickhouse and [Langwatch](https://langwatch.ai/)
 
 ## Future Roadmap
 
@@ -89,9 +90,8 @@ Your app template should now be running on [localhost:3000](http://localhost:300
   - Models that support it out-of-the-box will receive the file
   - Models that don't support it will receive a converted text version using [Markitdown](https://github.com/microsoft/markitdown)
   - Image PDFs can be converted to text using OCR models
+- File manager (to avoid re-uploads)
 - Input area notifications
-- Telemetry and analytics
-  - Using Clickhouse and [Langwatch](https://langwatch.ai/)
 - I18n
 - Organization, teams and projects
 - Custom themes and color palletes

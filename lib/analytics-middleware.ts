@@ -1,4 +1,5 @@
 import { type NextRequest } from 'next/server';
+import { UAParser } from 'ua-parser-js';
 
 /**
  * Extracts user information from the request for use in analytics
@@ -8,27 +9,18 @@ export function extractUserInfoForAnalytics(req: NextRequest) {
   // Get user agent info
   const userAgent = req.headers.get('user-agent') || '';
 
-  // We need to parse user agent manually without the ua-parser-js library
-  // Simple extraction of major browser and OS information
-  const isMobile = /mobile|android|iphone|ipad|ipod/i.test(userAgent.toLowerCase());
+  // Use ua-parser-js to get detailed user agent information
+  const parser = new UAParser(userAgent);
+  const result = parser.getResult();
 
-  // Very basic browser detection
-  let browserInfo = 'Unknown';
-  if (userAgent.includes('Firefox')) browserInfo = 'Firefox';
-  else if (userAgent.includes('Chrome')) browserInfo = 'Chrome';
-  else if (userAgent.includes('Safari')) browserInfo = 'Safari';
-  else if (userAgent.includes('Edge')) browserInfo = 'Edge';
-  else if (userAgent.includes('MSIE') || userAgent.includes('Trident/')) browserInfo = 'IE';
+  // Extract browser info
+  const browserInfo = result.browser.name || 'Unknown';
 
-  // Very basic OS detection
-  let osInfo = 'Unknown';
-  if (userAgent.includes('Windows')) osInfo = 'Windows';
-  else if (userAgent.includes('Mac OS')) osInfo = 'macOS';
-  else if (userAgent.includes('Linux')) osInfo = 'Linux';
-  else if (userAgent.includes('Android')) osInfo = 'Android';
-  else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) osInfo = 'iOS';
+  // Extract OS info
+  const osInfo = result.os.name || 'Unknown';
 
-  const deviceInfo = isMobile ? 'mobile' : 'desktop';
+  // Check if device is mobile
+  const deviceInfo = result.device.type === 'mobile' || result.device.type === 'tablet' ? 'mobile' : 'desktop';
 
   // Get IP address
   const forwardedFor = req.headers.get('x-forwarded-for');
