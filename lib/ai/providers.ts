@@ -1,5 +1,5 @@
-import { createOpenAI } from '@ai-sdk/openai';
 import { wrapLanguageModel } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 
 import { customMiddleware } from './custom-middleware';
 

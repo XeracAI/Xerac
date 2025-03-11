@@ -11,7 +11,7 @@ import {
 import mongoose from 'mongoose';
 
 import { auth } from '@/app/(auth)/auth';
-import { customModel, customImageModel, generateImage } from '@/lib/ai';
+import { customModel, customImageModel, generateImage } from '@/lib/ai/providers';
 import { models } from '@/lib/ai/models';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {

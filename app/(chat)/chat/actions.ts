@@ -3,7 +3,7 @@
 import { type CoreUserMessage, generateText } from 'ai';
 import { cookies } from 'next/headers';
 
-import { customModel } from '@/lib/ai';
+import { customModel } from '@/lib/ai/providers';
 import {
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,

@@ -17,7 +17,7 @@ import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
 import { models } from "@/lib/ai/models";
 import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
-import type { ImageData } from "@/lib/ai";
+import type { ImageData } from "@/lib/ai/providers";
 import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
 import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
 import { toast } from 'sonner';
