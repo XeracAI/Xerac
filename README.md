@@ -98,4 +98,5 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 - Pro mode: a toggle to add more features for power users
   - Token count
   - Parameter tuning (e.g. temperature)
+  - Claude and Gemini cache control
   - Setting your own API key
