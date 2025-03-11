@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { authConfig } from '@/app/(auth)/auth.config';
-import { extractUserInfoForAnalytics } from '@/lib/analytics-middleware';
+import { extractUserInfoForAnalytics } from '@/lib/analytics/middleware';
 
 export default NextAuth(authConfig).auth((req: NextRequest) => {
   // Extract analytics data and add it to headers for server components

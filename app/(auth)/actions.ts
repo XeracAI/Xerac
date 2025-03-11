@@ -10,7 +10,7 @@ import { generateOTP } from '@/lib/otp/generate';
 import { sendSMS } from '@/lib/otp/deliver';
 import { compareSync } from 'bcrypt-ts';
 import { trackUserEvent } from '@/lib/analytics';
-import { getUserAnalyticsFromHeaders } from '@/lib/analytics-middleware';
+import { getUserAnalyticsFromHeaders } from '@/lib/analytics/middleware';
 
 const phoneSchema = z.object({
   phone: z.string().transform((val) => parsePhoneNumberFromString(val, 'IR')).refine((val) => val?.isValid() ?? false, 'شماره موبایل نامعتبر است'),

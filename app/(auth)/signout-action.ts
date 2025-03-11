@@ -3,7 +3,7 @@
 import { signOut } from './auth';
 import { trackUserEvent } from '@/lib/analytics';
 import { headers } from 'next/headers';
-import { getUserAnalyticsFromHeaders } from '@/lib/analytics-middleware';
+import { getUserAnalyticsFromHeaders } from '@/lib/analytics/middleware';
 
 /**
  * Server action to track sign out event and then sign the user out
