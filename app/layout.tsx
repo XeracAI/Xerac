@@ -1,6 +1,8 @@
+import React from "react";
+
 import type { Metadata } from 'next';
 
-import { Toaster } from '@/components/toaster';
+import { Toaster } from '@/components/toast';
 import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';

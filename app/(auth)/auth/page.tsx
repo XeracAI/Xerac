@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { useTheme } from 'next-themes'
+import { toast } from '@/components/toast';
+import { useTheme } from 'next-themes';
 
 import { AuthForm } from '@/components/auth-form';
 import { authenticate } from '../actions';
@@ -23,32 +23,33 @@ export default function Page() {
 
       switch (result.status) {
         case 'invalid_data':
-          toast.error('اطلاعات وارد شده معتبر نیست!');
+          toast({ description: 'اطلاعات وارد شده معتبر نیست!', type: "error" });
           break;
         case 'user_not_found':
-          toast.error('کاربر پیدا نشد!');
+          toast({ description: 'کاربر پیدا نشد!', type: "error" });
           break;
         case 'failed':
-          toast.error('بررسی اطلاعات حساب کاربری با خطا مواجه شد!');
+          toast({ description: 'بررسی اطلاعات حساب کاربری با خطا مواجه شد!', type: "error" });
           break;
         case 'wait':
-          toast.warning('به دلیل وارد کردن مکرر کد تایید اشتباه، حساب شما 3 دقیقه قفل شده. لطفا بعدا دوباره تلاش کنید.')
+          toast({ description: 'به دلیل وارد کردن مکرر کد تایید اشتباه، حساب شما 3 دقیقه قفل شده. لطفا بعدا دوباره تلاش کنید.', type: "error" });
+          break;
         case 'needs_verification':
           setStep("otp");
-          toast.info('کد تایید به شماره موبایل شما ارسال شد');
+          toast({ description: 'کد تایید به شماره موبایل شما ارسال شد', type: "info" });
           break;
         case 'needs_password_set':
           setStep("password-set");
-          toast.info('لطفا یک رمز عبور جدید برای خود تعیین کنید');
+          toast({ description: 'لطفا یک رمز عبور جدید برای خود تعیین کنید', type: "info" });
           break;
         case 'needs_name_set':
           setStep("name-set");
           break;
         case 'expired_otp':
-          toast.error('کد تایید منقضی شده است!');
+          toast({ description: 'کد تایید منقضی شده است!', type: "error" });
           break;
         case 'invalid_otp':
-          toast.error('کد تایید نامعتبر است!');
+          toast({ description: 'کد تایید نامعتبر است!', type: "error" });
           break;
         case 'in_progress':
           setStep("password");
@@ -60,7 +61,7 @@ export default function Page() {
       }
     } catch (error: unknown) {
       console.error('Login error:', error);
-      toast.error('خطایی رخ داد. لطفا دوباره تلاش کنید.');
+      toast({ description: 'خطایی رخ داد. لطفا دوباره تلاش کنید.', type: "error" });
     }
     return false;
   };
@@ -104,8 +105,8 @@ export default function Page() {
             {getDescriptionText()}
           </p>
         </div>
-        <AuthForm 
-          action={handleSubmit} 
+        <AuthForm
+          action={handleSubmit}
           defaultPhone={phoneNumber}
           step={step}
           setStep={setStep}

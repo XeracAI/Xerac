@@ -19,7 +19,7 @@ export default async function Layout({
 
   // Redirect to login if user is not authenticated or missing name information
   if (!session?.user?.firstName || !session?.user?.lastName) {
-    redirect('/login');
+    redirect('/auth');
   }
 
   return (

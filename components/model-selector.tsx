@@ -2,7 +2,7 @@
 
 import React, { startTransition, useMemo, useOptimistic, useState } from 'react';
 
-import { saveModelId } from '@/app/(chat)/chat/actions';
+import { saveChatModelAsCookie } from '@/app/(chat)/chat/actions';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuShortcut,
 } from '@/components/ui/dropdown-menu';
-import { modelGroups, models } from '@/lib/ai/models';
+import { modelGroups, chatModels } from '@/lib/ai/models';
 import { cn } from '@/lib/utils';
 
 import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
@@ -31,14 +31,24 @@ export function ModelSelector({
   const [optimisticModelId, setOptimisticModelId] = useOptimistic(selectedModelId);
 
   const selectedModel = useMemo(
-    () => models.find((model) => model.id === optimisticModelId),
+    () => chatModels.find((model) => model.id === optimisticModelId),
     [optimisticModelId],
   );
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} dir="rtl">
-      <DropdownMenuTrigger className={cn('w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground', className)} asChild>
-        <Button variant="outline" className="md:px-2 md:h-[34px]">
+      <DropdownMenuTrigger
+        asChild
+        className={cn(
+          'w-fit data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
+          className,
+        )}
+      >
+        <Button
+          data-testid="model-selector"
+          variant="outline"
+          className="md:px-2 md:h-[34px]"
+        >
           {selectedModel?.label}
           <ChevronDownIcon />
         </Button>
@@ -52,13 +62,14 @@ export function ModelSelector({
 
               {modelGroup.models.map((model) => (
                 <DropdownMenuItem
+                  data-testid={`model-selector-item-${model.id}`}
                   key={model.id}
                   onSelect={() => {
                     setOpen(false);
 
                     startTransition(() => {
                       setOptimisticModelId(model.id);
-                      saveModelId(model.id);
+                      saveChatModelAsCookie(model.id);
                     });
                   }}
                   className="gap-4 group/item flex flex-row justify-between items-center cursor-pointer"

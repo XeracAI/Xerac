@@ -15,7 +15,7 @@ import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
-import { models } from "@/lib/ai/models";
+import { chatModels } from "@/lib/ai/models";
 import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
 import type { ImageData } from "@/lib/ai/providers";
 import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
@@ -137,7 +137,7 @@ export function Chat({
 
   const handleSubmitWrapper = (events?: { preventDefault?: () => void }, chatRequestOptions?: ChatRequestOptions): void => {
     setIsNewConversationState(false);
-    const selectedModel = models.find((model) => model.id === selectedChatModel)
+    const selectedModel = chatModels.find((model) => model.id === selectedChatModel)
 
     switch (selectedModel?.output) {
       case undefined:
@@ -251,7 +251,7 @@ export function Chat({
 
         <Messages
           chatId={id}
-          isLoading={status === 'submitted' || status === 'streaming'}
+          status={status}
           votes={votes}
           messages={messages}
           editMessage={editMessage}
@@ -269,7 +269,7 @@ export function Chat({
               input={input}
               setInput={setInput}
               handleSubmit={handleSubmitWrapper}
-              isLoading={status === 'submitted' || status === 'streaming'}
+              status={status}
               stop={stop}
               attachments={attachments}
               setAttachments={setAttachments}
@@ -286,7 +286,7 @@ export function Chat({
         input={input}
         setInput={setInput}
         handleSubmit={handleSubmitWrapper}
-        isLoading={status === 'submitted' || status === 'streaming'}
+        status={status}
         stop={stop}
         attachments={attachments}
         setAttachments={setAttachments}

@@ -6,7 +6,7 @@ function generateUniquePhone() {
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth');
   });
 
   test('shows login form with phone input initially', async ({ page }) => {

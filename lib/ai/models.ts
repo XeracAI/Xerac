@@ -1,8 +1,3 @@
-import {
-  customProvider,
-} from 'ai';
-import { openai } from '@ai-sdk/openai';
-
 import { StaticImport } from "next/dist/shared/lib/get-img-props";
 
 import gptLogoBlack from '@/assets/icons/third-party-logos/providers/openai-black.svg';
@@ -15,17 +10,6 @@ import stabilityAiLogo from '@/assets/icons/third-party-logos/providers/stabilit
 import leonardoAiLogo from '@/assets/icons/third-party-logos/providers/leonardo-ai.svg';
 
 export const DEFAULT_CHAT_MODEL: string = 'gpt-4o-mini';
-
-export const myProvider = customProvider({
-  languageModels: {
-    'title-model': openai('gpt-4-turbo'),
-    'artifact-model': openai('gpt-4o-mini'),
-  },
-  imageModels: {
-    'small-model': openai.image('dall-e-2'),
-    'large-model': openai.image('dall-e-3'),
-  },
-});
 
 interface Model {
   id: string;
@@ -180,7 +164,7 @@ export const imageGenerationModels: Array<Model> = [
 ];
 
 // Combine all models
-export const models: Array<Model> = [
+export const chatModels: Array<Model> = [
   ...gptModels,
   ...claudeModels,
   ...geminiModels,
@@ -213,7 +197,7 @@ export const modelGroups: Array<ModelGroup> = [
     id: "powerful",
     title: "قوی‌ترین‌ها",
     models: strongestPrefixes.map(prefix =>
-      models.find(model =>
+      chatModels.find(model =>
         model.id.startsWith(prefix) &&
         // Special case for gpt-4o to exclude gpt-4o-mini
         !(prefix === 'gpt-4o' && model.id.includes('-mini'))
@@ -224,7 +208,7 @@ export const modelGroups: Array<ModelGroup> = [
     id: "cheap",
     title: "ارزان‌ترین‌ها",
     models: cheapestPrefixes.map(prefix =>
-      models.find(model =>
+      chatModels.find(model =>
         model.id.startsWith(prefix)
       )
     ).filter(model => !!model),
@@ -238,7 +222,7 @@ export const modelGroups: Array<ModelGroup> = [
     id: "specific",
     title: "خاص‌منظوره‌ها",
     models: specificPrefixes.map(prefix =>
-      models.find(model =>
+      chatModels.find(model =>
         model.id.startsWith(prefix)
       )
     ).filter(model => !!model),

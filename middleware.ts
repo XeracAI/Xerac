@@ -25,5 +25,5 @@ export default NextAuth(authConfig).auth((req: NextRequest) => {
 });
 
 export const config = {
-  matcher: ['/chat', '/chat/:id', '/api/:path*', '/login'],
+  matcher: ['/chat', '/chat/:id', '/api/:path*', '/auth'],
 };

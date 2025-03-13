@@ -249,14 +249,14 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
     });
 
     // Track login event
-    await trackUserEvent({
+    trackUserEvent({
       userId: user.id,
       eventType: 'login',
       deviceInfo: analyticsData.deviceInfo,
       osInfo: analyticsData.osInfo,
       browserInfo: analyticsData.browserInfo,
       ipAddress: analyticsData.ipAddress,
-    });
+    }).catch((error) => console.error(error));
 
     return { status: (!user.firstName || !user.lastName) ? 'needs_name_set' : 'success' };
   } catch (error) {

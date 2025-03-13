@@ -5,10 +5,11 @@ import { Overview } from './overview';
 import { memo } from 'react';
 import { Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
+import { UseChatHelpers } from '@ai-sdk/react';
 
 interface MessagesProps {
   chatId: string;
-  isLoading: boolean;
+  status: UseChatHelpers['status'];
   votes: Array<Vote> | undefined;
   messages: Array<Message>;
   editMessage?: (messageId: string, newContent: string) => void;
@@ -21,7 +22,7 @@ interface MessagesProps {
 
 function PureMessages({
   chatId,
-  isLoading,
+  status,
   votes,
   messages,
   editMessage,
@@ -45,7 +46,7 @@ function PureMessages({
           key={message.id}
           chatId={chatId}
           message={message}
-          isLoading={isLoading && messages.length - 1 === index}
+          isLoading={status === 'streaming' && messages.length - 1 === index}
           vote={
             votes
               ? votes.find((vote) => vote.messageId === message.id)
@@ -57,7 +58,7 @@ function PureMessages({
         />
       ))}
 
-      {isLoading &&
+      {status === 'submitted' &&
         messages.length > 0 &&
         messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 
@@ -74,8 +75,8 @@ export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   return false;
   if (prevProps.isArtifactVisible && nextProps.isArtifactVisible) return true;
 
-  if (prevProps.isLoading !== nextProps.isLoading) return false;
-  if (prevProps.isLoading && nextProps.isLoading) return false;
+  if (prevProps.status !== nextProps.status) return false;
+  if (prevProps.status && nextProps.status) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;
   const prevMessages = prevProps.messages
   const nextMessages = nextProps.messages

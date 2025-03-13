@@ -2,7 +2,7 @@ import type { NextAuthConfig } from 'next-auth';
 
 export const authConfig = {
   pages: {
-    signIn: '/login',
+    signIn: '/auth',
     newUser: '/chat',
   },
   providers: [
@@ -13,7 +13,7 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnChat = nextUrl.pathname === '/chat';
-      const isOnAuth = nextUrl.pathname.startsWith('/login');
+      const isOnAuth = nextUrl.pathname.startsWith('/auth');
 
       if (isOnAuth) {
         return true; // Always allow access to login page

@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { MessageIcon } from './icons';
 import { XeracLogo } from "@/components/ui/xerac-logo";
 import Image from "next/image";
-import { models } from "@/lib/ai/models";
+import { chatModels } from "@/lib/ai/models";
 
 export const Overview = ({selectedModelId}: {selectedModelId: string}) => {
-  const model = models.find((model) => model.id === selectedModelId)
+  const model = chatModels.find((model) => model.id === selectedModelId)
 
   return (
     <motion.div

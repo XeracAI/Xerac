@@ -3,10 +3,8 @@
 import type { Message } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useMemo, useState } from 'react';
-
+import { memo, useState } from 'react';
 import type { Vote } from '@/lib/db/schema';
-
 import { DocumentToolCall, DocumentToolResult } from './document';
 import {
   PencilEditIcon,
@@ -25,7 +23,7 @@ import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import { cn, checkEnglishString } from "@/lib/utils";
-import { models } from "@/lib/ai/models";
+import { chatModels } from "@/lib/ai/models";
 import Image from "next/image";
 
 const PurePreviewMessage = ({
@@ -51,7 +49,7 @@ const PurePreviewMessage = ({
   // @ts-expect-error modelId is not defined in MessageAnnotation
   const modelId = message.annotations?.find((annotation) => annotation && annotation.modelId)?.modelId;
   if (modelId) {
-    model = models.find((model) => model.id === modelId);
+    model = chatModels.find((model) => model.id === modelId);
   }
 
   const { siblings = [] } = message
@@ -60,6 +58,7 @@ const PurePreviewMessage = ({
   return (
     <AnimatePresence>
       <motion.div
+        data-testid={`message-${message.role}`}
         className="w-full mx-auto max-w-3xl px-4 group/message"
         initial={{ x: 5, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -92,7 +91,10 @@ const PurePreviewMessage = ({
 
           <div className="flex flex-col gap-4 w-full">
             {message.experimental_attachments && (
-              <div className="flex flex-row justify-end gap-2">
+              <div
+                data-testid={`message-attachments`}
+                className="flex flex-row justify-end gap-2"
+              >
                 {message.experimental_attachments.map((attachment) => (
                   <PreviewAttachment
                     key={attachment.url}
@@ -111,7 +113,10 @@ const PurePreviewMessage = ({
 
             {(message.content || message.reasoning) && mode === 'view' && (
               <>
-                <div className="flex flex-row gap-2 items-center mb-1">
+                <div
+                  data-testid="message-content"
+                  className="flex flex-row gap-2 items-center mb-1"
+                >
                   <div
                     className={cn('flex flex-col gap-4', {
                       'bg-primary text-primary-foreground px-3 py-2 rounded-tl-xl rounded-bl-xl rounded-tr-[20px] rounded-br-sm ml-auto':
@@ -126,6 +131,7 @@ const PurePreviewMessage = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
+                          data-testid={`message-edit`}
                           variant="ghost"
                           className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
                           onClick={() => {
@@ -287,8 +293,11 @@ export const PreviewMessage = memo(
       )
     )
       return false;
+
     if (prevProps.message.siblings?.length !== nextProps.message.siblings?.length) return false;
-    return equal(prevProps.vote, nextProps.vote);
+    if (!equal(prevProps.vote, nextProps.vote)) return false;
+
+    return true;
   },
 );
 
@@ -297,6 +306,7 @@ export const ThinkingMessage = () => {
 
   return (
     <motion.div
+      data-testid="message-assistant-loading"
       className="w-full mx-auto max-w-3xl px-4 group/message"
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
