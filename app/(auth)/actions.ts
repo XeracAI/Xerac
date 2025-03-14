@@ -43,8 +43,12 @@ export interface AuthActionState {
     | 'needs_name_set'
     | 'wait'
     | 'invalid_otp'
-    | 'expired_otp';
+    | 'expired_otp'
+    | 'invalid_referral_code'
+    | 'register_closed';
 }
+
+const ENABLE_REGISTRATION = process.env.ENABLE_REGISTRATION === 'true';
 
 export async function authenticate(formData: FormData): Promise<AuthActionState> {
   try {
@@ -72,6 +76,10 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
     if (!otp && !password && !password1 && !password2 && !firstName && !lastName && !referralCode) {
       // If user doesn't exist, create a new unverified user
       if (!user) {
+        if (!ENABLE_REGISTRATION) {
+          return { status: 'register_closed' };
+        }
+
         user = await createUser({
           phoneNumber: phoneNumber.nationalNumber,
           countryCode: phoneNumber.countryCallingCode,
@@ -127,7 +135,7 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
     if (otp && !password) {
       otpSchema.parse({ otp });
 
-      // Return error if phone is already verified or otp is incorrect
+      // Return error if phone is already verified
       if (user.isPhoneNumberVerified && user.password) {
         return { status: 'invalid_data' }
       }
@@ -137,7 +145,7 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
         return { status: 'expired_otp' }
       }
 
-      // Return error and increase fails if OTP is wrong
+      // Return error and increase fails if OTP is incorrect
       if (user.otp !== otp) {
         await updateUserFailedTries(user.id, user.failedTries + 1, user.failedTries === 3 ? new Date(Date.now() + 900000) : undefined)
         return { status: 'invalid_otp' }
@@ -188,7 +196,7 @@ export async function authenticate(formData: FormData): Promise<AuthActionState>
       if (referralCode) {
         const referrerUser = await getUserByReferralCode(referralCode)
         if (referrerUser === null || (user.referrer && user.referrer === referrerUser.id)) {
-          return { status: 'invalid_data' }
+          return { status: 'invalid_referral_code' }
         }
 
         referrer = referrerUser.id

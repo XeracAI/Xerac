@@ -51,6 +51,12 @@ export default function Page() {
         case 'invalid_otp':
           toast({ description: 'کد تایید نامعتبر است!', type: "error" });
           break;
+        case 'register_closed':
+          toast({ description: 'ثبت نام در حال حاضر بسته است!', type: "error" });
+          break;
+        case 'invalid_referral_code':
+          toast({ description: 'کد معرف نامعتبر است!', type: "error" });
+          break;
         case 'in_progress':
           setStep("password");
           break;
