@@ -15,7 +15,13 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   {ignores: ["**/components/ui/**/*"]},
-  ...compat.extends("next/core-web-vitals", "plugin:import/recommended", "plugin:import/typescript", "next/typescript", "prettier", "plugin:tailwindcss/recommended"),
+  ...compat.extends("next/core-web-vitals", "plugin:import/recommended", "plugin:import/typescript", "prettier", "plugin:tailwindcss/recommended"),
+  ...compat.config({
+    extends: ["next/typescript"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
+  }),
   {
     plugins: {tailwindcss},
 
