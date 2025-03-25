@@ -12,7 +12,6 @@ import mongoose from 'mongoose';
 
 import { auth } from '@/app/(auth)/auth';
 import { customModel, customImageModel, generateImage } from '@/lib/ai/providers';
-import { chatModels } from '@/lib/ai/models';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {
   addChildToMessage,
@@ -33,10 +32,11 @@ import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { generateTitleFromUserMessage } from '../../chat/actions';
-import { IMessageInsert } from "@/lib/db/mongoose-schema";
+import { IMessageInsert } from '@/lib/db/mongoose-schema';
 import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 import { isProductionEnvironment } from '@/lib/constants';
 import { NextResponse } from 'next/server';
+import { getAIModelById } from '@/lib/cache';
 
 export const maxDuration = 60;
 
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
       return new Response('"modelId" is a required field!', { status: 400 });
     }
 
-    const model = chatModels.find((model) => model.id === modelId);
+    const model = getAIModelById(modelId);
 
     if (!model) {
       return new Response('Model not found!', { status: 404 });
@@ -193,114 +193,112 @@ export async function POST(request: Request) {
       ],
     });
 
-    switch (model.output) {
-      case undefined:
-      case 'text':
-        return createDataStreamResponse({
-          execute: (dataStream) => {
-            dataStream.writeData({
-              type: 'user-message-id',
-              content: userMessageId.toString(),
-            });
+    if (model.outputTypes.includes('Image')) {
+      const imageData = await generateImage({ prompt: message.content, model: customImageModel(model.apiIdentifier) });
 
-            const result = streamText({
-              model: customModel(model.apiIdentifier),
-              system: systemPrompt({ selectedChatModel: model.apiIdentifier }),
-              messages: coreMessages,
-              maxSteps: 5,
-              experimental_activeTools: allTools,
-              experimental_transform: smoothStream({ chunking: 'word' }),
-              tools: {
-                getWeather,
-                createDocument: createDocument({ session, dataStream }),
-                updateDocument: updateDocument({ session, dataStream }),
-                requestSuggestions: requestSuggestions({
-                  session,
-                  dataStream,
-                }),
-              },
-              onFinish: async ({ response, reasoning }) => {
-                if (session.user?.id) {
-                  try {
-                    const sanitizedResponseMessages = sanitizeResponseMessages({
-                      messages: response.messages,
-                      reasoning,
-                    });
+      // TODO save image in Minio and save file path in db
 
-                    let previousMessageId = userMessageId
-                    await saveMessages({
-                      messages: sanitizedResponseMessages.map(
-                        (message) => {
-                          const messageId = new mongoose.Types.ObjectId();
-
-                          const dbMessage: IMessageInsert = {
-                            _id: messageId,
-                            chatId: id,
-                            role: message.role,
-                            content: message.content,
-                            parent: previousMessageId,
-                            children: [],
-                          };
-
-                          if (message.role === 'assistant') {
-                            dataStream.writeMessageAnnotation({
-                              messageIdFromServer: messageId.toString(),
-                            });
-                            dataStream.writeMessageAnnotation({ modelId });
-                            dbMessage.modelId = modelId;
-                          }
-
-                          addChildToMessage(previousMessageId, messageId)
-                          previousMessageId = messageId
-
-                          return dbMessage;
-                        },
-                      ),
-                    });
-                  } catch (error) {
-                    console.error('Failed to save chat', error);
-                  }
-                }
-              },
-              experimental_telemetry: {
-                isEnabled: isProductionEnvironment,
-                functionId: 'stream-text',
-              },
-            });
-
-            result.consumeStream();
-
-            result.mergeIntoDataStream(dataStream, {
-              sendReasoning: true,
-            });
-          },
-          onError: error => {
-            // Error messages are masked by default for security reasons.
-            // If you want to expose the error message to the client, you can do so here:
-            return error instanceof Error ? error.message : String(error);
-          },
+      try {
+        await saveMessages({
+          messages: [{
+            chatId: id,
+            role: 'assistant',
+            images: [imageData],
+            modelId,
+            parent: userMessageId,
+            children: [],
+          }],
         });
-      case 'image':
-        const imageData = await generateImage({ prompt: message.content, model: customImageModel(model.apiIdentifier) });
+      } catch (error) {
+        console.error('Failed to save chat', error);
+      }
 
-        // TODO save image in Minio and save file path in db
-
-        try {
-          await saveMessages({
-            messages: [{
-              chatId: id,
-              role: 'assistant',
-              images: [imageData],
-              modelId,
-              parent: userMessageId,
-              children: [],
-            }],
+      return Response.json(imageData);
+    } else {
+      return createDataStreamResponse({
+        execute: (dataStream) => {
+          dataStream.writeData({
+            type: 'user-message-id',
+            content: userMessageId.toString(),
           });
-        } catch (error) {
-          console.error('Failed to save chat', error);
-        }
 
-        return Response.json(imageData);
+          const result = streamText({
+            model: customModel(model.apiIdentifier),
+            system: systemPrompt({ selectedChatModel: model.apiIdentifier }),
+            messages: coreMessages,
+            maxSteps: 5,
+            experimental_activeTools: allTools,
+            experimental_transform: smoothStream({ chunking: 'word' }),
+            tools: {
+              getWeather,
+              createDocument: createDocument({ session, dataStream }),
+              updateDocument: updateDocument({ session, dataStream }),
+              requestSuggestions: requestSuggestions({
+                session,
+                dataStream,
+              }),
+            },
+            onFinish: async ({ response, reasoning }) => {
+              if (session.user?.id) {
+                try {
+                  const sanitizedResponseMessages = sanitizeResponseMessages({
+                    messages: response.messages,
+                    reasoning,
+                  });
+
+                  let previousMessageId = userMessageId
+                  await saveMessages({
+                    messages: sanitizedResponseMessages.map(
+                      (message) => {
+                        const messageId = new mongoose.Types.ObjectId();
+
+                        const dbMessage: IMessageInsert = {
+                          _id: messageId,
+                          chatId: id,
+                          role: message.role,
+                          content: message.content,
+                          parent: previousMessageId,
+                          children: [],
+                        };
+
+                        if (message.role === 'assistant') {
+                          dataStream.writeMessageAnnotation({
+                            messageIdFromServer: messageId.toString(),
+                          });
+                          dataStream.writeMessageAnnotation({ modelId });
+                          dbMessage.modelId = modelId;
+                        }
+
+                        addChildToMessage(previousMessageId, messageId)
+                        previousMessageId = messageId
+
+                        return dbMessage;
+                      },
+                    ),
+                  });
+                } catch (error) {
+                  console.error('Failed to save chat', error);
+                }
+              }
+            },
+            experimental_telemetry: {
+              isEnabled: isProductionEnvironment,
+              functionId: 'stream-text',
+            },
+          });
+
+          result.consumeStream();
+
+          result.mergeIntoDataStream(dataStream, {
+            sendReasoning: true,
+          });
+        },
+        onError: error => {
+          // Error messages are masked by default for security reasons.
+          // If you want to expose the error message to the client, you can do so here:
+          return error instanceof Error ? error.message : String(error);
+        },
+      });
     }
   } catch (error) {
     return NextResponse.json({ error }, { status: 400 });

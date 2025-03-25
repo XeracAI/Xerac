@@ -1,230 +1,50 @@
-import { StaticImport } from "next/dist/shared/lib/get-img-props";
+import { getMetaDocumentById, getAIModelById } from '@/lib/cache';
+import { getUserModelGroups } from '@/lib/db/queries';
+import type { ModelGroupWithModelIDs } from '@/lib/db/types';
 
-import gptLogoBlack from '@/assets/icons/third-party-logos/providers/openai-black.svg';
-import gptLogoWhite from '@/assets/icons/third-party-logos/providers/openai-white.svg';
-import claudeLogo from '@/assets/icons/third-party-logos/providers/claude.svg';
-import geminiLogo from '@/assets/icons/third-party-logos/providers/gemini.svg';
-import dalleLogo from '@/assets/icons/third-party-logos/providers/dall-e.png';
-import grokLogo from '@/assets/icons/third-party-logos/providers/grok.svg';
-import stabilityAiLogo from '@/assets/icons/third-party-logos/providers/stability-ai.svg';
-import leonardoAiLogo from '@/assets/icons/third-party-logos/providers/leonardo-ai.svg';
+import { ModelGroupWithModels, ModelGroup } from './types';
+import { injectIconToModel } from './icons';
+import { initializeCache, isCacheInitialized } from "@/lib/cache/initialize";
 
-export const DEFAULT_CHAT_MODEL: string = 'gpt-4o-mini';
-
-interface Model {
-  id: string;
-  label: string;
-  apiIdentifier: string;
-  description: string;
-  output?: 'text' | 'image';
-  icon: { light: StaticImport, dark: StaticImport };
-  status: 'enabled' | 'coming-soon' | 'disabled';
+if (!isCacheInitialized()) {
+  await initializeCache();
 }
 
-export interface ModelGroup {
-  id: string;
-  title: string;
-  models: Array<Model>;
+function injectIconToModelGroups(modelGroups: ModelGroupWithModels[]): ModelGroup[] {
+  return modelGroups.map(modelGroup => ({
+    ...modelGroup,
+    models: modelGroup.models.map(model => injectIconToModel(model))
+  }));
 }
 
-// GPT models
-export const gptModels: Array<Model> = [
-  {
-    id: 'gpt-4o-mini',
-    label: 'چت‌جی‌پی‌تی 4o mini (ChatGPT)',
-    apiIdentifier: 'gpt-4o-mini',
-    description: 'مدلی برای انجام سریع و ارزان کارهای روزمره با دقت بالا از شرکت اوپن ای‌آی',
-    icon: { light: gptLogoBlack, dark: gptLogoWhite },
-    status: 'enabled',
-  },
-  {
-    id: 'gpt-4o',
-    label: 'چت‌جی‌پی‌تی 4o (ChatGPT)',
-    apiIdentifier: 'gpt-4o',
-    description: 'هوشمندترین مدل شرکت اوپن ای‌آی برای انجام تمامی کارها در سطح پیشرفته',
-    icon: { light: gptLogoBlack, dark: gptLogoWhite },
-    status: 'enabled',
-  },
-  {
-    id: 'o1-mini',
-    label: 'o1 Mini',
-    apiIdentifier: 'o1-mini',
-    description: 'مدل استدلالی سریع و مقرون به صرفه، طراحی شده برای کاربردهای برنامه‌نویسی، ریاضیات و علوم، از شرکت اوپن ای‌آی',
-    icon: { light: gptLogoBlack, dark: gptLogoWhite },
-    status: 'enabled',
-  },
-  {
-    id: 'o1-preview',
-    label: 'o1 Preview',
-    apiIdentifier: 'o1-preview',
-    description: 'مدل استدلالی از شرکت اوپن ای‌آی برای مسائل پیچیده که نیاز به دانش عمومی و گسترده دارند',
-    icon: { light: gptLogoBlack, dark: gptLogoWhite },
-    status: 'enabled',
-  },
-];
+function injectModelToModelGroups(modelGroups: ModelGroupWithModelIDs[]): ModelGroupWithModels[] {
+  return modelGroups.map(modelGroup => ({
+    ...modelGroup,
+    models: modelGroup.models.map(modelId => getAIModelById(modelId)).filter(model => model !== undefined)
+  }));
+}
 
-// Claude models
-export const claudeModels: Array<Model> = [
-  {
-    id: 'claude-3-5-sonnet-20241022',
-    label: 'کلاود ۳.۵ سانِت (Sonnet)',
-    apiIdentifier: 'claude-3-5-sonnet-20241022',
-    description: "هوشمندترین مدل شرکت آنتروپیک برای انجام تمامی کارها در سطح پیشرفته",
-    icon: { light: claudeLogo, dark: claudeLogo },
-    status: 'enabled',
-  },
-  {
-    id: 'claude-3-5-haiku-20241022',
-    label: 'کلاود ۳ هایکو (Haiku)',
-    apiIdentifier: 'claude-3-5-haiku-20241022',
-    description: 'مدلی برای انجام سریع و ارزان کارهای روزمره با دقت بالا از شرکت آنتروپیک',
-    icon: { light: claudeLogo, dark: claudeLogo },
-    status: 'enabled',
-  },
-  {
-    id: 'claude-3-opus-20240229',
-    label: 'کلاود ۳ اوپوس (Opus)',
-    apiIdentifier: 'claude-3-opus-20240229',
-    description: 'بزرگ‌ترین و گران‌ترین مدل شرکت آنتروپیک برای انجام تحلیل‌های پیچیده',
-    icon: { light: claudeLogo, dark: claudeLogo },
-    status: 'enabled',
-  },
-];
+const defaultMetaDocument = getMetaDocumentById(process.env.DEFAULT_META_DOCUMENT_ID || 'default-models')
+export const DEFAULT_CHAT_MODEL_ID: string = defaultMetaDocument?.defaultModel || 'gemini-2.0-flash-lite-001';
+const defaultModelGroups: ModelGroup[] = injectIconToModelGroups(injectModelToModelGroups(defaultMetaDocument?.defaultModelGroups || []));
 
-// Gemini models
-export const geminiModels: Array<Model> = [
-  {
-    id: 'gemini-1.5-flash',
-    label: 'جِمِنای ۱.۵ فلش (Flash)',
-    apiIdentifier: 'gemini-1.5-flash',
-    description: 'مدلی برای انجام سریع و ارزان کارهای روزمره با دقت بالا از شرکت گوگل',
-    icon: { light: geminiLogo, dark: geminiLogo },
-    status: 'enabled',
-  },
-  {
-    id: 'gemini-1.5-pro',
-    label: 'جِمِنای ۱.۵ پرو (Pro)',
-    apiIdentifier: 'gemini-1.5-pro',
-    description: 'هوشمندترین مدل شرکت گوگل برای انجام تمامی کارها در سطح پیشرفته',
-    icon: { light: geminiLogo, dark: geminiLogo },
-    status: 'enabled',
-  },
-];
+/**
+ * Fetches user's model groups from the database or returns default groups if none found
+ * @param userId - The current user's ID
+ * @returns Promise resolving to an array of ModelGroup objects
+ */
+export async function fetchUserModelGroups(userId: string): Promise<ModelGroup[]> {
+  let finalModelGroups: ModelGroupWithModelIDs[];
+  try {
+    finalModelGroups = await getUserModelGroups(userId);
 
-// Grok models
-export const grokModels: Array<Model> = [
-  {
-    id: 'grok-beta',
-    label: 'Grok 2',
-    apiIdentifier: 'grok-beta',
-    description: 'مدل قدرتمند ساخته شده توسط شرکت xAI',
-    icon: { light: grokLogo, dark: grokLogo },
-    status: 'coming-soon',
-  },
-];
+    if (finalModelGroups.length === 0) {
+      return defaultModelGroups;
+    }
 
-// Image generation models
-export const imageGenerationModels: Array<Model> = [
-  {
-    id: 'dall-e-3',
-    label: 'DALL-E 3',
-    apiIdentifier: 'dall-e-3',
-    description: 'مدلی از شرکت اوپن ای‌آی برای ایجاد عکس در سبک‌های مختلف با توجه به توضیحات شما',
-    output: 'image',
-    icon: { light: dalleLogo, dark: dalleLogo },
-    status: 'enabled',
-  },
-  {
-    id: 'leonardo',
-    label: 'Leonardo.Ai',
-    apiIdentifier: 'leonardo',
-    description: 'مدل قدرتمند تولید عکس',
-    output: 'image',
-    icon: { light: leonardoAiLogo, dark: leonardoAiLogo },
-    status: 'coming-soon',
-  },
-  {
-    id: 'SD3.5',
-    label: 'Stable Diffusion 3.5',
-    apiIdentifier: 'SD3.5',
-    description: 'مدل قدرتمند تولید عکس',
-    output: 'image',
-    icon: { light: stabilityAiLogo, dark: stabilityAiLogo },
-    status: 'coming-soon',
-  },
-  {
-    id: 'SDXL',
-    label: 'Stable Diffusion XL',
-    apiIdentifier: 'SDXL',
-    description: 'مدل قدرتمند تولید عکس',
-    output: 'image',
-    icon: { light: stabilityAiLogo, dark: stabilityAiLogo },
-    status: 'coming-soon',
-  },
-];
-
-// Combine all models
-export const chatModels: Array<Model> = [
-  ...gptModels,
-  ...claudeModels,
-  ...geminiModels,
-  ...grokModels,
-  ...imageGenerationModels,
-];
-
-// Define model tiers based on capabilities using prefixes
-const strongestPrefixes = [
-  'claude-3-5-sonnet-',
-  'gpt-4o',  // not mini
-  'gemini-1.5-pro'
-];
-
-const cheapestPrefixes = [
-  'gpt-4o-mini',
-  'claude-3-5-haiku-',
-  'gemini-1.5-flash'
-];
-
-const specificPrefixes = [
-  'claude-3-opus-',
-  'o1-preview',
-  'o1-mini',
-  'grok'
-];
-
-export const modelGroups: Array<ModelGroup> = [
-  {
-    id: "powerful",
-    title: "قوی‌ترین‌ها",
-    models: strongestPrefixes.map(prefix =>
-      chatModels.find(model =>
-        model.id.startsWith(prefix) &&
-        // Special case for gpt-4o to exclude gpt-4o-mini
-        !(prefix === 'gpt-4o' && model.id.includes('-mini'))
-      )
-    ).filter(model => !!model),
-  },
-  {
-    id: "cheap",
-    title: "ارزان‌ترین‌ها",
-    models: cheapestPrefixes.map(prefix =>
-      chatModels.find(model =>
-        model.id.startsWith(prefix)
-      )
-    ).filter(model => !!model),
-  },
-  {
-    id: "image",
-    title: "تولید عکس",
-    models: imageGenerationModels,
-  },
-  {
-    id: "specific",
-    title: "خاص‌منظوره‌ها",
-    models: specificPrefixes.map(prefix =>
-      chatModels.find(model =>
-        model.id.startsWith(prefix)
-      )
-    ).filter(model => !!model),
+    return injectIconToModelGroups(injectModelToModelGroups(finalModelGroups));
+  } catch (error) {
+    console.error('Failed to fetch user model groups:', error);
+    return defaultModelGroups;
   }
-];
+}

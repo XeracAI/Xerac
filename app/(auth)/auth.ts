@@ -7,14 +7,15 @@ import { getUser } from '@/lib/db/queries';
 
 declare module "next-auth" {
   interface User {
-    id?: string
-    name?: string | null
-    email?: string | null
-    image?: string | null
-    countryCode: string
-    phoneNumber: string
-    firstName: string | null
-    lastName: string | null
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    countryCode: string;
+    phoneNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    isAdmin: boolean | null;
   }
 }
 
@@ -25,6 +26,7 @@ declare module 'next-auth/jwt' {
     countryCode: string;
     firstName: string | null;
     lastName: string | null;
+    isAdmin: boolean | null;
   }
 }
 
@@ -43,7 +45,7 @@ export const {
       },
       async authorize({ phoneNumber, countryCode }) {
         const user = await getUser(phoneNumber as string, countryCode as string);
-        return user === null ? null : { id: user.id, phoneNumber: user.phoneNumber, countryCode: user.countryCode, firstName: user.firstName, lastName: user.lastName };
+        return user === null ? null : { id: user.id, phoneNumber: user.phoneNumber, countryCode: user.countryCode, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin };
       },
     }),
   ],
@@ -55,6 +57,7 @@ export const {
         token.countryCode = user.countryCode;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
+        token.isAdmin = user.isAdmin;
       }
 
       return token;
@@ -70,6 +73,7 @@ export const {
         countryCode: string;
         firstName: string | null;
         lastName: string | null;
+        isAdmin: boolean | null;
       };
     }) {
       if (session.user) {
@@ -78,6 +82,7 @@ export const {
         session.user.countryCode = token.countryCode;
         session.user.firstName = token.firstName;
         session.user.lastName = token.lastName;
+        session.user.isAdmin = token.isAdmin;
       }
       
       return session;

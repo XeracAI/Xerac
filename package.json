@@ -11,17 +11,20 @@
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
     "format": "biome format --write",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx lib/db/migrate.ts",
+    "db:migrate": "tsx lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
+    "db:seed": "tsx scripts/seed.ts",
     "test": "cross-env PLAYWRIGHT=True pnpm exec playwright test --workers=4",
-    "setup-clickhouse": "tsx scripts/setup-clickhouse.ts"
+    "clickhouse:migrate": "tsx scripts/setup-clickhouse.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.1.17",
     "@ai-sdk/fireworks": "^0.1.12",
+    "@ai-sdk/google": "^1.1.25",
     "@ai-sdk/openai": "^1.2.2",
     "@ai-sdk/provider": "^1.0.9",
     "@ai-sdk/react": "^1.1.20",

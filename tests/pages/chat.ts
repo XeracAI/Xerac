@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { chatModels } from '@/lib/ai/models';
+
 import { expect, Page } from '@playwright/test';
+
+import { getAIModelById } from '@/lib/cache';
 
 export class ChatPage {
   constructor(private page: Page) {}
@@ -93,9 +95,7 @@ export class ChatPage {
   }
 
   public async chooseModelFromSelector(chatModelId: string) {
-    const chatModel = chatModels.find(
-      (chatModel) => chatModel.id === chatModelId,
-    );
+    const chatModel = getAIModelById(chatModelId);
 
     if (!chatModel) {
       throw new Error(`Model with id ${chatModelId} not found`);

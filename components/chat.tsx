@@ -1,26 +1,31 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+import { toast } from 'sonner';
+
 import type { Attachment, ChatRequestOptions, Message } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { generateId } from "@ai-sdk/ui-utils";
-import { useEffect, useState } from 'react';
+import { generateId } from '@ai-sdk/ui-utils';
+
 import useSWR from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 
 import { ChatHeader } from '@/components/chat-header';
+
 import type { Vote, Chat } from '@/lib/db/schema';
+import type { Model } from '@/lib/ai/types';
+import type { ImageData } from '@/lib/ai/providers';
 import { fetcher, generateUUID, getMessageIdFromAnnotations } from '@/lib/utils';
+import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
+
+import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
+import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
 
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
-import { VisibilityType } from './visibility-selector';
-import { chatModels } from "@/lib/ai/models";
-import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
-import type { ImageData } from "@/lib/ai/providers";
-import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
-import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
-import { toast } from 'sonner';
+import type { VisibilityType } from './visibility-selector';
 
 export function Chat({
   id,
@@ -31,16 +36,16 @@ export function Chat({
   isNewConversation = false,
 }: {
   id: string;
-  initialMessages: Array<Message>;
-  selectedChatModel: string;
+  initialMessages: Message[];
+  selectedChatModel?: Model | null;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   isNewConversation?: boolean;
 }) {
   const { fetchAndUpdateChat, getChatById } = useChatHistoryCache();
 
-  const [allMessages, setAllMessages] = useState<Array<Message>>(initialMessages);
-  const [isNewConversationState, setIsNewConversationState] = useState(isNewConversation);
+  const [allMessages, setAllMessages] = useState<Message[]>(initialMessages);
+  const [isNewConversationState, setIsNewConversationState] = useState<boolean>(isNewConversation);
   const [messageEdited, setMessageEdited] = useState<boolean>(false);
 
   const [currentChat, setCurrentChat] = useState<Chat>(getChatById(id) as Chat);
@@ -73,6 +78,10 @@ export function Chat({
         throw Error("Empty message array!");
       }
 
+      if (!selectedChatModel) {
+        throw Error("Invalid or no chat model selected!");
+      }
+
       const message = messages[messages.length - 1];
       let parentId, siblingId;
       if (messages.length === 1 && message.siblings?.length !== 0) {
@@ -89,7 +98,7 @@ export function Chat({
 
       return {
         id,
-        modelId: selectedChatModel,
+        modelId: selectedChatModel.id,
         message: {
           role: message.role,
           content: message.content,
@@ -137,15 +146,13 @@ export function Chat({
 
   const handleSubmitWrapper = (events?: { preventDefault?: () => void }, chatRequestOptions?: ChatRequestOptions): void => {
     setIsNewConversationState(false);
-    const selectedModel = chatModels.find((model) => model.id === selectedChatModel)
 
-    switch (selectedModel?.output) {
-      case undefined:
-      case 'text':
-        handleSubmit(events, chatRequestOptions);
-        break;
-      case 'image':
-        const newMessage: Message = {id: generateId(), role: 'user', content: input}
+    if (!selectedChatModel) {
+      return;
+    }
+
+    if (selectedChatModel.outputTypes.includes('Image')) {
+      const newMessage: Message = {id: generateId(), role: 'user', content: input}
         setMessages((currentMessages) => [...currentMessages, newMessage])
 
         setInput('')
@@ -184,7 +191,8 @@ export function Chat({
             },
           })
         })
-        break;
+    } else {
+      handleSubmit(events, chatRequestOptions);
     }
   }
 
@@ -244,7 +252,7 @@ export function Chat({
         <ChatHeader
           chatId={id}
           chat={currentChat}
-          selectedModelId={selectedChatModel}
+          selectedModel={selectedChatModel}
           selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}
         />
@@ -259,7 +267,7 @@ export function Chat({
           isReadonly={isReadonly}
           isArtifactVisible={isArtifactVisible}
           isNewConversation={isNewConversationState}
-          selectedModelId={selectedChatModel}
+          selectedModel={selectedChatModel}
         />
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">

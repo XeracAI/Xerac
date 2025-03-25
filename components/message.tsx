@@ -1,10 +1,18 @@
 'use client';
 
-import type { Message } from 'ai';
+import { memo, useContext, useState } from 'react';
 import cx from 'classnames';
+import equal from 'fast-deep-equal';
+
+import Image from 'next/image';
+
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useState } from 'react';
+
+import type { Message } from 'ai';
+
 import type { Vote } from '@/lib/db/schema';
+import { cn, checkEnglishString } from '@/lib/utils';
+
 import { DocumentToolCall, DocumentToolResult } from './document';
 import {
   PencilEditIcon,
@@ -16,15 +24,12 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
-import equal from 'fast-deep-equal';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { cn, checkEnglishString } from "@/lib/utils";
-import { chatModels } from "@/lib/ai/models";
-import Image from "next/image";
+import { ModelContext } from "@/contexts/models";
 
 const PurePreviewMessage = ({
   chatId,
@@ -43,6 +48,9 @@ const PurePreviewMessage = ({
   selectSibling?: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
 }) => {
+  const modelContext = useContext(ModelContext);
+  const chatModels = modelContext.models;
+
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   let model = null;

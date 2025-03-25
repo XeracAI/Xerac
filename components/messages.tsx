@@ -1,11 +1,15 @@
+import { memo } from 'react';
+import equal from 'fast-deep-equal';
+
 import { Message } from 'ai';
+import { UseChatHelpers } from '@ai-sdk/react';
+
+import type { Vote } from '@/lib/db/schema';
+import type { Model } from '@/lib/ai/types';
+
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Overview } from './overview';
-import { memo } from 'react';
-import { Vote } from '@/lib/db/schema';
-import equal from 'fast-deep-equal';
-import { UseChatHelpers } from '@ai-sdk/react';
 
 interface MessagesProps {
   chatId: string;
@@ -16,7 +20,7 @@ interface MessagesProps {
   changeBranch: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;
   isArtifactVisible: boolean;
-  selectedModelId: string;
+  selectedModel?: Model | null;
   isNewConversation: boolean;
 }
 
@@ -28,7 +32,7 @@ function PureMessages({
   editMessage,
   changeBranch,
   isReadonly,
-  selectedModelId,
+  selectedModel,
   isNewConversation,
 }: MessagesProps) {
   const [messagesContainerRef, messagesEndRef] =
@@ -39,7 +43,7 @@ function PureMessages({
       ref={messagesContainerRef}
       className="flex flex-col min-w-0 gap-8 flex-1 overflow-y-scroll pt-4"
     >
-      {isNewConversation && <Overview selectedModelId={selectedModelId} />}
+      {isNewConversation && <Overview selectedModel={selectedModel} />}
 
       {messages.map((message, index) => (
         <PreviewMessage

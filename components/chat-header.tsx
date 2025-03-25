@@ -1,29 +1,34 @@
 'use client';
 
+import { memo } from 'react';
+
 import { useRouter } from 'next/navigation';
+
+import { useTheme } from 'next-themes';
 import { useWindowSize } from 'usehooks-ts';
 
 import { ModelSelector } from '@/components/model-selector';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import { Button } from '@/components/ui/button';
 import { BetterTooltip } from '@/components/ui/tooltip';
-import { PlusIcon } from './icons';
+
+import type { Chat } from '@/lib/db/schema';
+import type { Model } from '@/lib/ai/types';
+
 import { useSidebar } from './ui/sidebar';
-import { memo } from 'react';
-import { VisibilityType, VisibilitySelector } from './visibility-selector';
-import {useTheme} from "next-themes";
-import type { Chat } from "@/lib/db/schema";
+import { PlusIcon } from './icons';
+import { type VisibilityType, VisibilitySelector } from './visibility-selector';
 
 function PureChatHeader({
   chatId,
   chat,
-  selectedModelId,
+  selectedModel,
   selectedVisibilityType,
   isReadonly,
 }: {
   chatId: string;
   chat: Chat | undefined;
-  selectedModelId: string;
+  selectedModel?: Model | null;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
@@ -55,7 +60,7 @@ function PureChatHeader({
 
       {!isReadonly && (
         <ModelSelector
-          selectedModelId={selectedModelId}
+          selectedModel={selectedModel}
           className="order-1 md:order-2"
         />
       )}
@@ -80,6 +85,6 @@ function PureChatHeader({
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  if (prevProps.selectedModelId !== nextProps.selectedModelId) return false;
+  if (prevProps.selectedModel !== nextProps.selectedModel) return false;
   return !(prevProps.chat?.title !== nextProps.chat?.title);
 });

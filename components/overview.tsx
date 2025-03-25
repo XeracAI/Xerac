@@ -1,13 +1,13 @@
+import Image from 'next/image';
+
 import { motion } from 'framer-motion';
 
+import { XeracLogo } from '@/components/ui/xerac-logo';
+import type { Model } from '@/lib/ai/types';
+
 import { MessageIcon } from './icons';
-import { XeracLogo } from "@/components/ui/xerac-logo";
-import Image from "next/image";
-import { chatModels } from "@/lib/ai/models";
 
-export const Overview = ({selectedModelId}: {selectedModelId: string}) => {
-  const model = chatModels.find((model) => model.id === selectedModelId)
-
+export const Overview = ({selectedModel}: {selectedModel?: Model | null}) => {
   return (
     <motion.div
       key="overview"
@@ -20,10 +20,10 @@ export const Overview = ({selectedModelId}: {selectedModelId: string}) => {
       <div className="rounded-xl p-6 flex flex-col gap-8 leading-relaxed text-center max-w-xl">
         <p className="flex flex-row justify-center gap-4 items-center">
           {
-            model ?
+            selectedModel ?
               <>
-                <Image src={model.icon.light} alt={model.label} width={48} height={48} className="dark:hidden" />
-                <Image src={model.icon.dark} alt={model.label} width={48} height={48} className="hidden dark:block" />
+                <Image src={selectedModel.icon.light} alt={selectedModel.label} width={48} height={48} className="dark:hidden" />
+                <Image src={selectedModel.icon.dark} alt={selectedModel.label} width={48} height={48} className="hidden dark:block" />
               </> :
               <MessageIcon size={48} />
           }
@@ -31,7 +31,7 @@ export const Overview = ({selectedModelId}: {selectedModelId: string}) => {
           <XeracLogo className="size-12" />
         </p>
         <p>
-          {model?.description}
+          {selectedModel?.description}
         </p>
       </div>
     </motion.div>

@@ -1,13 +1,18 @@
+import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 import { auth } from '@/app/(auth)/auth';
+
 import { Chat } from '@/components/chat';
-import { DEFAULT_CHAT_MODEL, chatModels } from '@/lib/ai/models';
-import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
-import { convertToUIMessages } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
-import type { Metadata } from "next";
+
+import { DEFAULT_CHAT_MODEL_ID, fetchUserModelGroups } from '@/lib/ai/models';
+import { injectIconToModel } from '@/lib/ai/icons';
+import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
+import { getAllAIModels, getAIModelById } from '@/lib/cache';
+import { ModelContextProvider } from '@/contexts/models';
+import { convertToUIMessages } from '@/lib/utils';
 
 type Props = {
   params: Promise<{ id: string }>
@@ -53,20 +58,31 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   });
 
   const cookieStore = await cookies();
-  const modelIdFromCookie = cookieStore.get('model-id')?.value;
+  const modelIdFromCookie = cookieStore.get('chat-model')?.value;
+
+  const chatModels = getAllAIModels();
   const selectedModelId =
     chatModels.find((model) => model.id === modelIdFromCookie)?.id ||
-    DEFAULT_CHAT_MODEL;
+    DEFAULT_CHAT_MODEL_ID;
+  const selectedModel = getAIModelById(selectedModelId);
+  if (selectedModel === undefined) {
+    return <div>Something went very wrong!</div>
+  }
 
   return (
     <>
-      <Chat
-        id={chat.id}
-        initialMessages={convertToUIMessages(messagesFromDb)}
-        selectedChatModel={selectedModelId}
-        selectedVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
-      />
+      <ModelContextProvider
+        initialModels={chatModels.map(model => injectIconToModel(model))}
+        initialUserModelGroups={session?.user?.id ? await fetchUserModelGroups(session.user.id) : null}
+      >
+        <Chat
+          id={chat.id}
+          initialMessages={convertToUIMessages(messagesFromDb)}
+          selectedChatModel={injectIconToModel(selectedModel)}
+          selectedVisibilityType={chat.visibility}
+          isReadonly={session?.user?.id !== chat.userId}
+        />
+      </ModelContextProvider>
       <DataStreamHandler id={id} />
     </>
   );

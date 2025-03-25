@@ -10,7 +10,7 @@ declare module "ai" {
     role: 'system' | 'user' | 'assistant' | 'data';
     data?: JSONValue;
     annotations?: JSONValue[] | undefined;
-    toolInvocations?: Array<ToolInvocation>;
+    toolInvocations?: ToolInvocation[];
 
     serverId?: string;
 

@@ -126,3 +126,25 @@ const fileSchema = new Schema<IFile>({
 fileSchema.index({ createdAt: -1 });
 
 export const FileModel = mongoose.models.File || mongoose.model<IFile>('File', fileSchema);
+
+export interface IMetaInsert {
+  id: string;
+
+  [key: string]: any;
+}
+
+export interface IMeta extends IMetaInsert {
+	_id: mongoose.Types.ObjectId;
+
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+const metaSchema = new Schema<IMeta>({
+  id: String,
+}, {
+  timestamps: true,
+  strict: false,
+});
+
+export const MetaModel = mongoose.models.Meta || mongoose.model<IMeta>('Meta', metaSchema);

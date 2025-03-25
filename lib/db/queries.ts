@@ -1,27 +1,39 @@
 import 'server-only'
 
-import {genSaltSync, hashSync} from 'bcrypt-ts'
-import {and, asc, desc, eq, gt, lt, SQLWrapper} from 'drizzle-orm'
-import {drizzle} from 'drizzle-orm/postgres-js'
+import { genSaltSync, hashSync } from 'bcrypt-ts'
+import { and, asc, desc, eq, gt, lt, SQLWrapper } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+import mongoose, { FlattenMaps } from 'mongoose'
 
 import {
   user,
   chat,
-  type User,
   document,
-  type SuggestionInsert,
   suggestion,
   vote,
-  UserWithAllFields,
+  model,
+  feature,
+  modelFeature,
+  modelTag,
+  modelGroup,
+  modelGroupModel,
+  tag,
+  type User,
+  type UserWithAllFields,
+  type SuggestionInsert,
+  type Model,
+  type Feature,
+  type Tag,
 } from './schema';
 import { ArtifactKind } from '@/components/artifact';
 
-import {IMessage, IMessageInsert, Message} from './mongoose-schema'
+import { IMessage, IMessageInsert, Message } from './mongoose-schema'
 import dbConnect from './connect'
-import {PgTableWithColumns, TableConfig} from 'drizzle-orm/pg-core'
-import { generateUniqueCode } from '../codes'
-import mongoose, { FlattenMaps } from 'mongoose'
+import { PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core'
+import { generateUniqueCode } from '@/lib/codes'
+
+import type { ModelWithFeaturesAndTags, ModelGroupWithModelIDs } from './types'
 
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!)
@@ -64,6 +76,8 @@ export async function getUser(phoneNumber: string, countryCode: string): Promise
         referralCode: user.referralCode,
         referrer: user.referrer,
         referrerDiscountUsed: user.referrerDiscountUsed,
+
+        isAdmin: user.isAdmin,
 
         dateCreated: user.dateCreated,
       })
@@ -130,7 +144,7 @@ export async function createUser({
 
 export async function updateUserOTP(userId: string, otp: string, otpExpires: Date) {
   try {
-    return await db.update(user).set({otp, otpExpires, lastSMSSent: new Date()}).where(eq(user.id, userId))
+    return await db.update(user).set({ otp, otpExpires, lastSMSSent: new Date() }).where(eq(user.id, userId))
   } catch (error) {
     console.error('Failed to update user OTP in database')
     throw error
@@ -139,7 +153,7 @@ export async function updateUserOTP(userId: string, otp: string, otpExpires: Dat
 
 export async function updateUserFailedTries(userId: string, failedTries: number, lockedUntil?: Date) {
   try {
-    return await db.update(user).set({failedTries, lockedUntil}).where(eq(user.id, userId))
+    return await db.update(user).set({ failedTries, lockedUntil }).where(eq(user.id, userId))
   } catch (error) {
     console.error("Failed to update user's failed tries in database")
     throw error
@@ -148,7 +162,7 @@ export async function updateUserFailedTries(userId: string, failedTries: number,
 
 export async function updateUserVerification(userId: string, isVerified: boolean) {
   try {
-    return await db.update(user).set({isPhoneNumberVerified: isVerified}).where(eq(user.id, userId))
+    return await db.update(user).set({ isPhoneNumberVerified: isVerified }).where(eq(user.id, userId))
   } catch (error) {
     console.error('Failed to update user verification status in database')
     throw error
@@ -160,7 +174,7 @@ export async function updateUserPassword(userId: string, password: string) {
     const salt = genSaltSync(10)
     const hash = hashSync(password, salt)
 
-    return await db.update(user).set({password: hash}).where(eq(user.id, userId))
+    return await db.update(user).set({ password: hash }).where(eq(user.id, userId))
   } catch (error) {
     console.error('Failed to update user password in database')
     throw error
@@ -169,14 +183,14 @@ export async function updateUserPassword(userId: string, password: string) {
 
 export async function updateUserInfo(userId: string, firstName: string, lastName: string, referrer?: string) {
   try {
-    return await db.update(user).set({firstName, lastName, referrer}).where(eq(user.id, userId))
+    return await db.update(user).set({ firstName, lastName, referrer }).where(eq(user.id, userId))
   } catch (error) {
     console.error('Failed to update user info in database')
     throw error
   }
 }
 
-export async function saveChat({id, userId, title}: {id: string; userId: string; title: string}) {
+export async function saveChat({ id, userId, title }: { id: string; userId: string; title: string }) {
   try {
     return await db.insert(chat).values({
       id,
@@ -190,19 +204,19 @@ export async function saveChat({id, userId, title}: {id: string; userId: string;
   }
 }
 
-export async function updateChatById({id, title}: {id: string; title: string}) {
+export async function updateChatById({ id, title }: { id: string; title: string }) {
   try {
-    return await db.update(chat).set({title}).where(eq(chat.id, id))
+    return await db.update(chat).set({ title }).where(eq(chat.id, id))
   } catch (error) {
     console.error('Failed to update chat by id in database')
     throw error
   }
 }
 
-export async function deleteChatById({id}: {id: string}) {
+export async function deleteChatById({ id }: { id: string }) {
   try {
     await dbConnect()
-    await Message.deleteMany({chatId: id}).exec()
+    await Message.deleteMany({ chatId: id }).exec()
     await db.delete(vote).where(eq(vote.chatId, id))
     return await db.delete(chat).where(eq(chat.id, id))
   } catch (error) {
@@ -211,15 +225,15 @@ export async function deleteChatById({id}: {id: string}) {
   }
 }
 
-export async function getChatsByUserId({id, cursor, limit}: {id: string; cursor?: Date; limit: number}) {
+export async function getChatsByUserId({ id, cursor, limit }: { id: string; cursor?: Date; limit: number }) {
   try {
     const query = cursor
       ? db
-          .select()
-          .from(chat)
-          .where(and(eq(chat.userId, id), lt(chat.createdAt, cursor)))
-          .orderBy(desc(chat.createdAt))
-          .limit(limit)
+        .select()
+        .from(chat)
+        .where(and(eq(chat.userId, id), lt(chat.createdAt, cursor)))
+        .orderBy(desc(chat.createdAt))
+        .limit(limit)
       : db.select().from(chat).where(eq(chat.userId, id)).orderBy(desc(chat.createdAt)).limit(limit)
 
     return await query
@@ -229,7 +243,7 @@ export async function getChatsByUserId({id, cursor, limit}: {id: string; cursor?
   }
 }
 
-export async function getChatById({id}: {id: string}) {
+export async function getChatById({ id }: { id: string }) {
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id))
     return selectedChat
@@ -239,17 +253,17 @@ export async function getChatById({id}: {id: string}) {
   }
 }
 
-export async function getMessagesByChatId({id}: {id: string}): Promise<Array<FlattenMaps<IMessage>>> {
+export async function getMessagesByChatId({ id }: { id: string }): Promise<Array<FlattenMaps<IMessage>>> {
   try {
     await dbConnect()
-    return await Message.find({chatId: id}).select('-__v').sort({createdAt: 'asc'}).lean<Array<FlattenMaps<IMessage>>>().exec()
+    return await Message.find({ chatId: id }).select('-__v').sort({ createdAt: 'asc' }).lean<Array<FlattenMaps<IMessage>>>().exec()
   } catch (error) {
     console.error('Failed to get messages by chat id from database', error)
     throw error
   }
 }
 
-export async function saveMessages({messages}: {messages: Array<IMessageInsert>}) {
+export async function saveMessages({ messages }: { messages: Array<IMessageInsert> }) {
   try {
     await dbConnect()
     return await Message.insertMany(messages)
@@ -262,7 +276,7 @@ export async function saveMessages({messages}: {messages: Array<IMessageInsert>}
 export async function updateMessage(messageId: string, message: Partial<IMessageInsert>) {
   try {
     await dbConnect()
-    return await Message.updateOne({_id: messageId}, message).exec()
+    return await Message.updateOne({ _id: messageId }, message).exec()
   } catch (error) {
     console.error('Failed to update message in database', error)
     throw error
@@ -272,14 +286,14 @@ export async function updateMessage(messageId: string, message: Partial<IMessage
 export async function addChildToMessage(messageId: mongoose.Types.ObjectId, childId: mongoose.Types.ObjectId) {
   try {
     await dbConnect()
-    return await Message.updateOne({_id: messageId}, {$push: {children: childId}}).exec()
+    return await Message.updateOne({ _id: messageId }, { $push: { children: childId } }).exec()
   } catch (error) {
     console.error('Failed to update message in database', error)
     throw error
   }
 }
 
-export async function voteMessage({chatId, messageId, type}: {chatId: string; messageId: string; type: 'up' | 'down'}) {
+export async function voteMessage({ chatId, messageId, type }: { chatId: string; messageId: string; type: 'up' | 'down' }) {
   try {
     const [existingVote] = await db
       .select()
@@ -289,7 +303,7 @@ export async function voteMessage({chatId, messageId, type}: {chatId: string; me
     if (existingVote) {
       return await db
         .update(vote)
-        .set({isUpvoted: type === 'up'})
+        .set({ isUpvoted: type === 'up' })
         .where(and(eq(vote.messageId, messageId), eq(vote.chatId, chatId)))
     }
     return await db.insert(vote).values({
@@ -303,7 +317,7 @@ export async function voteMessage({chatId, messageId, type}: {chatId: string; me
   }
 }
 
-export async function getVotesByChatId({id}: {id: string}) {
+export async function getVotesByChatId({ id }: { id: string }) {
   try {
     return await db.select().from(vote).where(eq(vote.chatId, id))
   } catch (error) {
@@ -340,7 +354,7 @@ export async function saveDocument({
   }
 }
 
-export async function getDocumentsById({id}: {id: string}) {
+export async function getDocumentsById({ id }: { id: string }) {
   try {
     return await db.select().from(document).where(eq(document.id, id)).orderBy(asc(document.createdAt))
   } catch (error) {
@@ -349,7 +363,7 @@ export async function getDocumentsById({id}: {id: string}) {
   }
 }
 
-export async function getDocumentById({id}: {id: string}) {
+export async function getDocumentById({ id }: { id: string }) {
   try {
     const [selectedDocument] = await db.select().from(document).where(eq(document.id, id)).orderBy(desc(document.createdAt))
 
@@ -360,7 +374,7 @@ export async function getDocumentById({id}: {id: string}) {
   }
 }
 
-export async function deleteDocumentsByIdAfterTimestamp({id, timestamp}: {id: string; timestamp: Date}) {
+export async function deleteDocumentsByIdAfterTimestamp({ id, timestamp }: { id: string; timestamp: Date }) {
   try {
     await db.delete(suggestion).where(and(eq(suggestion.documentId, id), gt(suggestion.documentCreatedAt, timestamp)))
 
@@ -371,7 +385,7 @@ export async function deleteDocumentsByIdAfterTimestamp({id, timestamp}: {id: st
   }
 }
 
-export async function saveSuggestions({suggestions}: {suggestions: Array<SuggestionInsert>}) {
+export async function saveSuggestions({ suggestions }: { suggestions: Array<SuggestionInsert> }) {
   try {
     return await db.insert(suggestion).values(suggestions)
   } catch (error) {
@@ -380,7 +394,7 @@ export async function saveSuggestions({suggestions}: {suggestions: Array<Suggest
   }
 }
 
-export async function getSuggestionsByDocumentId({documentId}: {documentId: string}) {
+export async function getSuggestionsByDocumentId({ documentId }: { documentId: string }) {
   try {
     return await db
       .select()
@@ -392,7 +406,7 @@ export async function getSuggestionsByDocumentId({documentId}: {documentId: stri
   }
 }
 
-export async function getMessageById({id}: {id: string}) {
+export async function getMessageById({ id }: { id: string }) {
   try {
     await dbConnect()
     return await Message.findById(id).select('-__v').lean<FlattenMaps<IMessage>>().exec()
@@ -402,12 +416,12 @@ export async function getMessageById({id}: {id: string}) {
   }
 }
 
-export async function deleteMessagesByChatIdAfterTimestamp({chatId, timestamp}: {chatId: string; timestamp: Date}) {
+export async function deleteMessagesByChatIdAfterTimestamp({ chatId, timestamp }: { chatId: string; timestamp: Date }) {
   try {
     await dbConnect()
     return await Message.deleteMany({
       chatId,
-      createdAt: {$gte: timestamp},
+      createdAt: { $gte: timestamp },
     }).exec()
   } catch (error) {
     console.error('Failed to delete messages by id after timestamp from database')
@@ -415,12 +429,156 @@ export async function deleteMessagesByChatIdAfterTimestamp({chatId, timestamp}: 
   }
 }
 
-export async function updateChatVisiblityById({chatId, visibility}: {chatId: string; visibility: 'private' | 'public'}) {
+export async function updateChatVisiblityById({ chatId, visibility }: { chatId: string; visibility: 'private' | 'public' }) {
   try {
-    return await db.update(chat).set({visibility}).where(eq(chat.id, chatId))
+    return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId))
   } catch (error) {
     console.error('Failed to update chat visibility in database')
     throw error
+  }
+}
+
+// AI Models queries
+export async function getModels(): Promise<Model[]> {
+  try {
+    return await db.select().from(model);
+  } catch (error) {
+    console.error('Failed to get all models from database', error);
+    throw error;
+  }
+}
+
+export async function getModelById(id: string): Promise<Model | undefined> {
+  try {
+    const [selectedModel] = await db.select().from(model).where(eq(model.id, id));
+    return selectedModel;
+  } catch (error) {
+    console.error('Failed to get model by id from database', error);
+    throw error;
+  }
+}
+
+export async function getModelFeatures(modelId: string): Promise<Feature[]> {
+  try {
+    const features = await db
+      .select({
+        feature: feature,
+      })
+      .from(modelFeature)
+      .where(eq(modelFeature.modelId, modelId))
+      .innerJoin(feature, eq(modelFeature.featureId, feature.id));
+
+    return features.map(f => f.feature);
+  } catch (error) {
+    console.error('Failed to get model features from database', error);
+    throw error;
+  }
+}
+
+export async function getModelsWithFeatures() {
+  try {
+    const models = await getModels();
+    return await Promise.all(
+      models.map(async (model) => {
+        const features = await getModelFeatures(model.id);
+        return {
+          ...model,
+          features,
+        };
+      })
+    );
+  } catch (error) {
+    console.error('Failed to get models with features from database', error);
+    throw error;
+  }
+}
+
+export async function getModelTags(modelId: string): Promise<Tag[]> {
+  try {
+    const tags = await db
+      .select({
+        tag,
+      })
+      .from(modelTag)
+      .where(eq(modelTag.modelId, modelId))
+      .innerJoin(tag, eq(modelTag.tagId, tag.id));
+
+    return tags.map(t => t.tag);
+  } catch (error) {
+    console.error('Failed to get model tags from database', error);
+    throw error;
+  }
+}
+
+export async function getModelsWithFeaturesAndTags(): Promise<ModelWithFeaturesAndTags[]> {
+  try {
+    const models = await getModels();
+    return await Promise.all(
+      models.map(async (model) => {
+        const features = await getModelFeatures(model.id);
+        const tags = await getModelTags(model.id);
+        return {
+          ...model,
+          features,
+          tags,
+        };
+      })
+    );
+  } catch (error) {
+    console.error('Failed to get models with features and tags from database', error);
+    throw error;
+  }
+}
+
+/**
+ * Gets all model groups for a user with their associated models
+ * @param userId The user's ID
+ * @returns Array of model groups with their models' IDs
+ */
+export async function getUserModelGroups(userId: string): Promise<ModelGroupWithModelIDs[]> {
+  try {
+    // Get all model groups with their models in a single query
+    const results = await db
+      .select({
+        groupId: modelGroup.id,
+        groupTitle: modelGroup.title,
+        groupOrder: modelGroup.order,
+        modelId: modelGroupModel.modelId
+      })
+      .from(modelGroup)
+      .leftJoin(
+        modelGroupModel,
+        eq(modelGroup.id, modelGroupModel.modelGroupId)
+      )
+      .where(eq(modelGroup.userId, userId))
+      .orderBy(asc(modelGroup.order));
+
+    if (results.length === 0) {
+      return [];
+    }
+
+    // Process the flat results into a nested structure
+    const groupMap = new Map<string, ModelGroupWithModelIDs>();
+
+    for (const row of results) {
+      if (!groupMap.has(row.groupId)) {
+        groupMap.set(row.groupId, {
+          id: row.groupId,
+          title: row.groupTitle || '',
+          order: row.groupOrder || 0,
+          models: [],
+        });
+      }
+
+      if (row.modelId) {
+        groupMap.get(row.groupId)!.models.push(row.modelId);
+      }
+    }
+
+    return Array.from(groupMap.values());
+  } catch (error) {
+    console.error('Failed to get user model groups from database', error);
+    return [];
   }
 }
 

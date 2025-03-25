@@ -1,11 +1,13 @@
+import React from 'react';
+
 import { cookies } from 'next/headers';
+import Script from 'next/script';
 import { redirect } from 'next/navigation';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 import { auth } from '@/app/(auth)/auth';
-import Script from 'next/script';
 
 export const experimental_ppr = true;
 

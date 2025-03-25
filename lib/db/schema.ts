@@ -11,7 +11,31 @@ import {
   boolean,
   uniqueIndex,
   AnyPgColumn,
+  serial,
+  bigint,
+  jsonb,
+  customType
 } from 'drizzle-orm/pg-core';
+
+type NumericConfig = {
+	precision?: number
+	scale?: number
+}
+
+export const numericCasted = customType<{
+	data: number
+	driverData: string
+	config: NumericConfig
+}>({
+	dataType: (config) => {
+		if (config?.precision && config?.scale) {
+			return `numeric(${config.precision}, ${config.scale})`
+		}
+		return 'numeric'
+	},
+	fromDriver: (value: string) => Number.parseFloat(value), // note: precision loss for very large/small digits so area to refactor if needed
+	toDriver: (value: number) => value.toString(),
+});
 
 export const user = pgTable('User', {
   id: uuid().primaryKey().notNull().defaultRandom(),
@@ -37,10 +61,12 @@ export const user = pgTable('User', {
   referrer: uuid().references((): AnyPgColumn => user.id),
   referrerDiscountUsed: boolean('referrerDiscountUsed').notNull().default(false),
 
+  isAdmin: boolean('isAdmin').default(false).notNull(),
+
   dateCreated: timestamp('dateCreated').notNull().defaultNow(),
-}, (table) => ({
-  phoneUnique: uniqueIndex('phone_unique_idx').on(table.phoneNumber, table.countryCode),
-}));
+}, (t) => [
+  uniqueIndex('phone_unique_idx').on(t.phoneNumber, t.countryCode),
+]);
 
 export type UserWithAllFields = InferSelectModel<typeof user>;
 export type User = Omit<Omit<UserWithAllFields, 'password'>, 'otp'>;
@@ -67,11 +93,9 @@ export const vote = pgTable(
 
     createdAt: timestamp('createdAt').defaultNow().notNull(),
   },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.chatId, table.messageId] }),
-    };
-  },
+  (t) => [
+    primaryKey({ columns: [t.chatId, t.messageId] }),
+  ]
 );
 
 export type Vote = InferSelectModel<typeof vote>;
@@ -92,11 +116,9 @@ export const document = pgTable(
       .notNull()
       .default('text'),
   },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.id, table.createdAt] }),
-    };
-  },
+  (t) => [
+    primaryKey({ columns: [t.id, t.createdAt] }),
+  ]
 );
 
 export type Document = InferSelectModel<typeof document>;
@@ -117,14 +139,126 @@ export const suggestion = pgTable(
 
     createdAt: timestamp('createdAt').defaultNow().notNull(),
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.id] }),
-    documentRef: foreignKey({
-      columns: [table.documentId, table.documentCreatedAt],
+  (t) => [
+    primaryKey({ columns: [t.id] }),
+    foreignKey({
+      columns: [t.documentId, t.documentCreatedAt],
       foreignColumns: [document.id, document.createdAt],
     }),
-  }),
+  ],
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
 export type SuggestionInsert = InferInsertModel<typeof suggestion>;
+
+export const feature = pgTable('Feature', {
+  id: varchar('id', { length: 50 }).primaryKey().notNull(),
+
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description').notNull(),
+  icon: varchar('icon', { length: 50 }).notNull(),
+  color: varchar('color', { length: 50 }).notNull(),
+});
+
+export type Feature = InferSelectModel<typeof feature>;
+
+export const model = pgTable('Model', {
+  id: varchar('id', { length: 50 }).primaryKey().notNull(),
+
+  label: varchar('label', { length: 50 }).notNull(),
+
+  provider: varchar('provider', { length: 50 }).notNull(),
+  apiIdentifier: varchar('apiIdentifier', { length: 100 }).notNull(),
+
+  description: text('description').notNull(),
+
+  inputTypes: varchar('inputTypes', { enum: ['Text', 'Image', 'Audio', 'Video'] }).array().notNull(),
+  outputTypes: varchar('outputTypes', { enum: ['Text', 'Image', 'Audio', 'Video', 'Embedding'] }).array().notNull(),
+
+  contextWindow: bigint('contextWindow', { mode: 'number' }),
+  maxOutput: bigint('maxOutput', { mode: 'number' }),
+
+  // For 1 million tokens
+  inputCost: numericCasted('inputCost', { precision: 10, scale: 6 }),
+  outputCost: numericCasted('outputCost', { precision: 10, scale: 6 }),
+  cacheWriteCost: numericCasted('cacheWriteCost', { precision: 10, scale: 6 }),
+  cacheReadCost: numericCasted('cacheReadCost', { precision: 10, scale: 6 }),
+
+  knowledgeCutoff: timestamp('knowledgeCutoff'),
+  releaseDate: timestamp('releaseDate'),
+
+  extraMetadata: jsonb('extraMetadata'),
+
+  status: varchar('status', { enum: ['enabled', 'coming-soon', 'disabled'] }).notNull(),
+
+  createdAt: timestamp('createdAt').defaultNow().notNull(),
+});
+
+export type Model = InferSelectModel<typeof model>;
+
+export const tag = pgTable('Tag', {
+  id: uuid().primaryKey().notNull().defaultRandom(),
+  name: varchar('name', { length: 50 }).notNull().unique(),
+  description: text('description'),
+});
+
+export type Tag = InferSelectModel<typeof tag>;
+
+export const modelFeature = pgTable(
+  'ModelFeature',
+  {
+    modelId: varchar('modelId', { length: 70 }).notNull().references(() => model.id),
+    featureId: varchar('featureId').notNull().references(() => feature.id),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.modelId, t.featureId] }),
+  ],
+);
+
+export type ModelFeature = InferSelectModel<typeof modelFeature>;
+
+export const modelTag = pgTable(
+  'ModelTag',
+  {
+    modelId: varchar('modelId', { length: 70 }).notNull().references(() => model.id),
+    tagId: uuid('tagId').notNull().references(() => tag.id),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.modelId, t.tagId] }),
+  ],
+);
+
+export type ModelTag = InferSelectModel<typeof modelTag>;
+
+export const modelGroup = pgTable(
+  'ModelGroup',
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+    userId: uuid('userId').notNull().references(() => user.id),
+    title: varchar('title', { length: 50 }).notNull(),
+    order: serial('order').notNull(),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('user_title_unique_idx').on(t.userId, t.title),
+    uniqueIndex('user_order_unique_idx').on(t.userId, t.order),
+  ],
+);
+
+export type ModelGroup = Omit<Omit<InferSelectModel<typeof modelGroup>, 'userId'>, 'createdAt'>;
+
+export const modelGroupModel = pgTable(
+  'ModelGroupModel',
+  {
+    modelId: varchar('modelId', { length: 70 }).notNull().references(() => model.id),
+    modelGroupId: uuid('modelGroupId').notNull().references(() => modelGroup.id),
+    createdAt: timestamp('createdAt').defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.modelId, t.modelGroupId] }),
+  ],
+);
+
+export type ModelGroupModel = InferSelectModel<typeof modelGroupModel>;
