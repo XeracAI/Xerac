@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import type { Attachment, ChatRequestOptions, Message } from 'ai';
+import type { Attachment, ChatRequestOptions, UIMessage } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { generateId } from '@ai-sdk/ui-utils';
+import { generateId, TextUIPart } from '@ai-sdk/ui-utils';
 
 import useSWR from 'swr';
 import { useWindowSize } from 'usehooks-ts';
@@ -36,7 +36,7 @@ export function Chat({
   isNewConversation = false,
 }: {
   id: string;
-  initialMessages: Message[];
+  initialMessages: UIMessage[];
   selectedChatModel?: Model | null;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
@@ -44,7 +44,7 @@ export function Chat({
 }) {
   const { fetchAndUpdateChat, getChatById } = useChatHistoryCache();
 
-  const [allMessages, setAllMessages] = useState<Message[]>(initialMessages);
+  const [allMessages, setAllMessages] = useState<UIMessage[]>(initialMessages);
   const [isNewConversationState, setIsNewConversationState] = useState<boolean>(isNewConversation);
   const [messageEdited, setMessageEdited] = useState<boolean>(false);
 
@@ -99,12 +99,8 @@ export function Chat({
       return {
         id,
         modelId: selectedChatModel.id,
-        message: {
-          role: message.role,
-          content: message.content,
-          toolInvocations: message.toolInvocations,
-          experimental_attachments: message.experimental_attachments,
-        },
+        content: (message.parts[0] as TextUIPart).text,
+        attachments: message.experimental_attachments,
         siblingId,
         parentId,
       };
@@ -136,7 +132,16 @@ export function Chat({
 
     const { parent, siblings = [] } = message;
     const newId = generateId();
-    const newMessage = {id: newId, serverId: message.serverId ?? message.id, role: 'user', content: newContent, parent, children: [], siblings: [...siblings, newId]} as Message;
+    const newMessage: UIMessage = {
+      id: newId,
+      serverId: message.serverId ?? message.id,
+      role: 'user',
+      content: '',
+      parts: [{ type: 'text', text: newContent }],
+      parent,
+      children: [],
+      siblings: [...siblings, newId],
+    };
     setMessages([...messages.slice(0, messageIndex), newMessage]);
     setAllMessages([...allMessages, newMessage]);
     setMessageEdited(true);
@@ -152,45 +157,45 @@ export function Chat({
     }
 
     if (selectedChatModel.outputTypes.includes('Image')) {
-      const newMessage: Message = {id: generateId(), role: 'user', content: input}
-        setMessages((currentMessages) => [...currentMessages, newMessage])
+      const newMessage: UIMessage = {id: generateId(), role: 'user', parts: [{ type: 'text', text: input }], content: ''};
+      setMessages((currentMessages) => [...currentMessages, newMessage]);
 
-        setInput('')
+      setInput('');
 
-        fetch(
-          '/api/chat',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({id, modelId: selectedChatModel, messages: [newMessage]})
-          }
-        ).then((response) => response.json()).then((responseData: ImageData) => {
-          let documentId, content;
-          if (responseData.url) {
-            documentId = (responseData.url.split('/').pop() ?? "").split('?')[0].split('.')[0]
-            content = `![alt](${responseData.url})` // TODO replace alt with generated title after it was handled
-            content = responseData.url // TODO replace alt with generated title after it was handled
-          } else {
-            documentId = generateUUID();
-            // content = `![alt](data:image/png;base64,${responseData.b64_json})`
-            content = `data:image/png;base64,${responseData.b64_json}`
-          }
+      fetch(
+        '/api/chat',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({id, modelId: selectedChatModel, messages: [newMessage]})
+        }
+      ).then((response) => response.json()).then((responseData: ImageData) => {
+        let documentId, content;
+        if (responseData.url) {
+          documentId = (responseData.url.split('/').pop() ?? "").split('?')[0].split('.')[0];
+          content = `![alt](${responseData.url})`; // TODO replace alt with generated title after it was handled
+          content = responseData.url; // TODO replace alt with generated title after it was handled
+        } else {
+          documentId = crypto.randomUUID();
+          // content = `![alt](data:image/png;base64,${responseData.b64_json})`
+          content = `data:image/png;base64,${responseData.b64_json}`;
+        }
 
-          setArtifact({
-            kind: 'image',
-            documentId,
-            content,
-            title: '', // TODO replace with generated title after it was handled
-            status: 'idle',
-            isVisible: true,
-            boundingBox: {
-              top: windowHeight / 4,
-              left: windowWidth / 4,
-              width: 250,
-              height: 50,
-            },
-          })
-        })
+        setArtifact({
+          kind: 'image',
+          documentId,
+          content,
+          title: '', // TODO replace with generated title after it was handled
+          status: 'idle',
+          isVisible: true,
+          boundingBox: {
+            top: windowHeight / 4,
+            left: windowWidth / 4,
+            width: 250,
+            height: 50,
+          },
+        });
+      });
     } else {
       handleSubmit(events, chatRequestOptions);
     }
@@ -238,8 +243,8 @@ export function Chat({
     }
   }, [messages, messageEdited]);
 
-  const { data: votes } = useSWR<Array<Vote>>(
-    `/api/vote?chatId=${id}`,
+  const { data: votes } = useSWR<Vote[]>(
+    messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
     fetcher,
   );
 

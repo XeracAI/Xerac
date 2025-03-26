@@ -35,7 +35,6 @@ export function PureMessageActions({
 
   if (isLoading) return null;
   if (message.role === 'user') return null;
-  if (message.toolInvocations && message.toolInvocations.length > 0) return null;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -46,7 +45,18 @@ export function PureMessageActions({
               className="py-1 px-2 h-fit text-muted-foreground"
               variant="outline"
               onClick={async () => {
-                await copyToClipboard(message.content as string);
+                const textFromParts = message.parts
+                  ?.filter((part) => part.type === 'text')
+                  .map((part) => part.text)
+                  .join('\n')
+                  .trim();
+
+                if (!textFromParts) {
+                  toast.error("There's no text to copy!");
+                  return;
+                }
+
+                await copyToClipboard(textFromParts);
                 toast.success('Copied to clipboard!');
               }}
             >
@@ -178,6 +188,7 @@ export const MessageActions = memo(
   PureMessageActions,
   (prevProps, nextProps) => {
     if (!equal(prevProps.vote, nextProps.vote)) return false;
+    if (!equal(prevProps.model, nextProps.model)) return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
 
     return true;

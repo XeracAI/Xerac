@@ -8,10 +8,12 @@ export interface IMessageInsert {
   role: 'system' | 'user' | 'assistant' | 'tool';
 
   content?: unknown;
+  parts?: unknown[];
   images?: unknown[];
   audios?: unknown[];
   videos?: unknown[];
   voice?: unknown;
+  attachments: unknown[];
 
   modelId?: string;
 
@@ -41,6 +43,10 @@ const messageSchema = new Schema<IMessage>({
   content: {
     type: Schema.Types.Mixed,
   },
+  parts: {
+    type: [Schema.Types.Mixed],
+    default: [],
+  },
   images: {
     type: [Schema.Types.Mixed],
     default: [],
@@ -55,6 +61,11 @@ const messageSchema = new Schema<IMessage>({
   },
   voice: {
     type: Schema.Types.Mixed,
+  },
+  attachments: {
+    type: [Schema.Types.Mixed],
+    required: true,
+    default: [],
   },
 
   modelId: {

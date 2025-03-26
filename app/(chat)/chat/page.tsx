@@ -9,10 +9,9 @@ import { DEFAULT_CHAT_MODEL_ID, fetchUserModelGroups } from '@/lib/ai/models';
 import { injectIconToModel } from '@/lib/ai/icons';
 import { getAllAIModels, getAIModelById } from '@/lib/cache';
 import { ModelContextProvider } from '@/contexts/models';
-import { generateUUID } from '@/lib/utils';
 
 export default async function Page() {
-  const id = generateUUID();
+  const id = crypto.randomUUID();
 
   const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const modelIdFromCookie = cookieStore.get('chat-model')?.value;

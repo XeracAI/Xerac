@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import equal from 'fast-deep-equal';
 
-import { Message } from 'ai';
+import { UIMessage } from 'ai';
 import { UseChatHelpers } from '@ai-sdk/react';
 
 import type { Vote } from '@/lib/db/schema';
@@ -15,7 +15,7 @@ interface MessagesProps {
   chatId: string;
   status: UseChatHelpers['status'];
   votes: Array<Vote> | undefined;
-  messages: Array<Message>;
+  messages: Array<UIMessage>;
   editMessage?: (messageId: string, newContent: string) => void;
   changeBranch: (nodeId: string, siblingId: string) => void;
   isReadonly: boolean;

@@ -1,16 +1,22 @@
+import { NextResponse } from 'next/server';
+
 import {
-  type Message,
+  appendResponseMessages,
   createDataStreamResponse,
   convertToCoreMessages,
   smoothStream,
   streamText,
-  CoreUserMessage,
+  type CoreMessage,
+  type CoreUserMessage,
+  type Message,
   // We don't use Vercel AI SDK generateImage, because it only handles base 64 response for now
   // experimental_generateImage as generateImage
 } from 'ai';
+import type { Attachment } from "@ai-sdk/ui-utils";
 import mongoose from 'mongoose';
 
 import { auth } from '@/app/(auth)/auth';
+
 import { customModel, customImageModel, generateImage } from '@/lib/ai/providers';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {
@@ -22,21 +28,27 @@ import {
   saveMessages,
   updateChatById,
 } from '@/lib/db/queries';
-import {
-  convertToUIMessages,
-  sanitizeResponseMessages,
-} from '@/lib/utils';
+import { convertToUIMessages } from '@/lib/utils';
 
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
-import { generateTitleFromUserMessage } from '../../chat/actions';
-import { IMessageInsert } from '@/lib/db/mongoose-schema';
+
 import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 import { isProductionEnvironment } from '@/lib/constants';
-import { NextResponse } from 'next/server';
 import { getAIModelById } from '@/lib/cache';
+
+import { generateTitleFromUserMessage } from '../../chat/actions';
+
+interface POSTRouteBody {
+  id: string;
+  content: string;
+  attachments: Attachment[];
+  modelId: string;
+  siblingId: string | undefined;
+  parentId: string | undefined;
+}
 
 export const maxDuration = 60;
 
@@ -96,11 +108,12 @@ export async function POST(request: Request) {
   try {
     const {
       id,
-      message,
+      content,
+      attachments,
       modelId,
       siblingId,
       parentId,
-    }: { id: string; message: Message; modelId: string; siblingId: string | undefined; parentId: string | undefined } = await request.json();
+    }: POSTRouteBody = await request.json();
 
     const session = await auth();
 
@@ -114,8 +127,8 @@ export async function POST(request: Request) {
     } else if (!uuidRegex.test(id)) {
       return new Response('Invalid UUID format!', { status: 400 });
     }
-    if (message === undefined) {
-      return new Response('"message" is a required field!', { status: 400 });
+    if (content === undefined) {
+      return new Response('"content" is a required field!', { status: 400 });
     }
     if (modelId === undefined) {
       return new Response('"modelId" is a required field!', { status: 400 });
@@ -127,25 +140,19 @@ export async function POST(request: Request) {
       return new Response('Model not found!', { status: 404 });
     }
 
-    if (message.role === undefined || message.content === undefined) {
-      return new Response('No role or content found in the message!', { status: 400 });
-    }
-    if (message.role !== 'user') {
-      return new Response('Must provide a user message!', { status: 400 });
-    }
-
-    const userCoreMessage = convertToCoreMessages([message]).at(-1) as CoreUserMessage
+    const userMessage = { role: 'user', content, experimental_attachments: attachments } as Message;
+    const userCoreMessage = convertToCoreMessages([userMessage]).at(-1) as CoreUserMessage;
 
     const chat = await getChatById({ id });
 
     const userMessageId = new mongoose.Types.ObjectId();
 
-    let coreMessages, parent;
+    let messages: CoreMessage[], parent;
     if (!chat) {
       const title = await generateTitleFromUserMessage({ message: userCoreMessage });
       // TODO generate chat ID (UUID) on server
       await saveChat({ id, userId: session.user.id, title });
-      coreMessages = [userCoreMessage];
+      messages = [userCoreMessage];
     } else {
       if (chat.userId !== session.user.id) {
         return new Response('Unauthorized', { status: 401 });
@@ -153,7 +160,7 @@ export async function POST(request: Request) {
 
       const dbMessages = await getMessagesByChatId({ id });
       if (dbMessages.length === 0) { // An empty chat should never exist but just in case
-        coreMessages = [userCoreMessage];
+        messages = [userCoreMessage];
       } else {
         if (mongoose.isValidObjectId(siblingId)) {
           const leaf = dbMessages.find((dbM) => dbM._id.equals(siblingId));
@@ -163,7 +170,7 @@ export async function POST(request: Request) {
 
           const branch = constructBranchUntilDBMessage(leaf, dbMessages);
           parent = leaf.parent;
-          coreMessages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
+          messages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
         } else {
           if (parentId === undefined) {
             return new Response('Must provide a valid parent message ID for non-empty chats!', { status: 400 });
@@ -177,7 +184,7 @@ export async function POST(request: Request) {
           }
 
           const branch = constructBranchFromDBMessages(parent, dbMessages);
-          coreMessages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
+          messages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
           parent = parent._id;
         }
 
@@ -189,12 +196,20 @@ export async function POST(request: Request) {
 
     await saveMessages({
       messages: [
-        { ...userCoreMessage, _id: userMessageId, chatId: id, parent, children: [] },
+        {
+          chatId: id,
+          _id: userMessageId,
+          role: 'user',
+          parts: [{ type: 'text', text: content }],
+          attachments: attachments ?? [],
+          parent,
+          children: [],
+        },
       ],
     });
 
     if (model.outputTypes.includes('Image')) {
-      const imageData = await generateImage({ prompt: message.content, model: customImageModel(model.apiIdentifier) });
+      const imageData = await generateImage({ prompt: content, model: customImageModel(model.apiIdentifier) });
 
       // TODO save image in Minio and save file path in db
 
@@ -204,6 +219,7 @@ export async function POST(request: Request) {
             chatId: id,
             role: 'assistant',
             images: [imageData],
+            attachments: [],
             modelId,
             parent: userMessageId,
             children: [],
@@ -225,7 +241,7 @@ export async function POST(request: Request) {
           const result = streamText({
             model: customModel(model.apiIdentifier),
             system: systemPrompt({ selectedChatModel: model.apiIdentifier }),
-            messages: coreMessages,
+            messages,
             maxSteps: 5,
             experimental_activeTools: allTools,
             experimental_transform: smoothStream({ chunking: 'word' }),
@@ -238,44 +254,43 @@ export async function POST(request: Request) {
                 dataStream,
               }),
             },
-            onFinish: async ({ response, reasoning }) => {
+            onFinish: async ({ response }) => {
               if (session.user?.id) {
                 try {
-                  const sanitizedResponseMessages = sanitizeResponseMessages({
-                    messages: response.messages,
-                    reasoning,
+                  const assistantMessages = response.messages.filter(
+                    (message) => message.role === 'assistant',
+                  )
+
+                  if (assistantMessages.length === 0) {
+                    throw new Error('No assistant message found!');
+                  }
+
+                  const [, assistantMessage] = appendResponseMessages({
+                    messages: [{ ...userMessage, id }],
+                    responseMessages: response.messages,
                   });
 
-                  let previousMessageId = userMessageId
+                  const assistantMessageId = new mongoose.Types.ObjectId();
                   await saveMessages({
-                    messages: sanitizedResponseMessages.map(
-                      (message) => {
-                        const messageId = new mongoose.Types.ObjectId();
+                    messages: [
+                      {
+                        _id: assistantMessageId,
+                        chatId: id,
+                        role: 'assistant',
+                        parts: assistantMessage.parts,
+                        attachments: assistantMessage.experimental_attachments ?? [],
 
-                        const dbMessage: IMessageInsert = {
-                          _id: messageId,
-                          chatId: id,
-                          role: message.role,
-                          content: message.content,
-                          parent: previousMessageId,
-                          children: [],
-                        };
+                        modelId,
 
-                        if (message.role === 'assistant') {
-                          dataStream.writeMessageAnnotation({
-                            messageIdFromServer: messageId.toString(),
-                          });
-                          dataStream.writeMessageAnnotation({ modelId });
-                          dbMessage.modelId = modelId;
-                        }
-
-                        addChildToMessage(previousMessageId, messageId)
-                        previousMessageId = messageId
-
-                        return dbMessage;
-                      },
-                    ),
+                        parent: userMessageId,
+                        children: [],
+                      }
+                    ]
                   });
+                  dataStream.writeMessageAnnotation({
+                    messageIdFromServer: assistantMessageId.toString(),
+                  });
+                  dataStream.writeMessageAnnotation({ modelId });
                 } catch (error) {
                   console.error('Failed to save chat', error);
                 }
@@ -301,6 +316,7 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
+    console.log("HERE", typeof error, error);
     return NextResponse.json({ error }, { status: 400 });
   }
 }

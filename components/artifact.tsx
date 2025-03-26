@@ -1,4 +1,4 @@
-import type { Attachment, Message } from 'ai';
+import type { Attachment, UIMessage } from 'ai';
 import { formatDistance } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -75,8 +75,8 @@ function PureArtifact({
   stop: UseChatHelpers['stop'];
   attachments: Array<Attachment>;
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<Message>;
-  setMessages: Dispatch<SetStateAction<Array<Message>>>;
+  messages: Array<UIMessage>;
+  setMessages: UseChatHelpers['setMessages'];
   editMessage?: (messageId: string, newContent: string) => void;
   changeBranch: (nodeId: string, siblingId: string) => void;
   votes: Array<Vote> | undefined;
@@ -476,7 +476,6 @@ function PureArtifact({
                     append={append}
                     status={status}
                     stop={stop}
-                    setMessages={setMessages}
                     artifactKind={artifact.kind}
                   />
                 )}

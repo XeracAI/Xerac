@@ -1,14 +1,13 @@
 'use client';
 
-import { memo, useContext, useState } from 'react';
+import React, { memo, useContext, useState } from 'react';
+import type { UIMessage } from 'ai';
 import cx from 'classnames';
 import equal from 'fast-deep-equal';
 
 import Image from 'next/image';
 
 import { AnimatePresence, motion } from 'framer-motion';
-
-import type { Message } from 'ai';
 
 import type { Vote } from '@/lib/db/schema';
 import { cn, checkEnglishString } from '@/lib/utils';
@@ -41,7 +40,7 @@ const PurePreviewMessage = ({
   isReadonly,
 }: {
   chatId: string;
-  message: Message;
+  message: UIMessage;
   vote: Vote | undefined;
   isLoading: boolean;
   editMessage?: (messageId: string, newContent: string) => void;
@@ -100,8 +99,8 @@ const PurePreviewMessage = ({
           <div className="flex flex-col gap-4 w-full">
             {message.experimental_attachments && (
               <div
-                data-testid={`message-attachments`}
-                className="flex flex-row justify-end gap-2"
+                data-testid="message-attachments"
+                className="flex flex-row justify-start gap-2"
               >
                 {message.experimental_attachments.map((attachment) => (
                   <PreviewAttachment
@@ -112,132 +111,115 @@ const PurePreviewMessage = ({
               </div>
             )}
 
-            {message.reasoning && (
-              <MessageReasoning
-                isLoading={isLoading}
-                reasoning={message.reasoning}
-              />
-            )}
+            {message.parts?.map((part, index) => {
+              const { type } = part;
+              const key = `message-${message.id}-part-${index}`;
 
-            {(message.content || message.reasoning) && mode === 'view' && (
-              <>
-                <div
-                  data-testid="message-content"
-                  className="flex flex-row gap-2 items-center mb-1"
-                >
-                  <div
-                    className={cn('flex flex-col gap-4', {
-                      'bg-primary text-primary-foreground px-3 py-2 rounded-tl-xl rounded-bl-xl rounded-tr-[20px] rounded-br-sm ml-auto':
-                        message.role === 'user',
-                    })}
-                    style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
-                  >
-                    <Markdown>{message.content as string}</Markdown>
-                  </div>
+              if (type === 'reasoning') {
+                return (
+                  <MessageReasoning
+                    key={key}
+                    isLoading={isLoading}
+                    reasoning={part.reasoning}
+                  />
+                );
+              }
 
-                  {message.role === 'user' && !isReadonly && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          data-testid={`message-edit`}
-                          variant="ghost"
-                          className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
-                          onClick={() => {
-                            setMode('edit');
-                          }}
+              if (type === 'text') {
+                if (mode === 'view') {
+                  return (
+                    <React.Fragment key={key}>
+                      <div className="flex flex-row gap-2 items-start">
+                        <div
+                          data-testid="message-content"
+                          className={cn('flex flex-col gap-4', {
+                            'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                              message.role === 'user',
+                          })}
+                          style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
                         >
-                          <PencilEditIcon />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>ویرایش پیام</TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
+                          <Markdown>{part.text}</Markdown>
+                        </div>
 
-                {selectSibling !== undefined && siblings.length > 1 && (
-                  <div className='flex items-center'>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="p-1 h-fit rounded-md text-muted-foreground"
-                          onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex - 1])}
-                          disabled={siblingIndex === 0}
-                        >
-                          <RightArrowIcon size={12} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>پیام قبلی</TooltipContent>
-                    </Tooltip>
-
-                    <div className="px-0.5 pt-0.5 text-xs">{siblingIndex + 1}/{siblings.length}</div>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="p-1 h-fit rounded-md text-muted-foreground"
-                          onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex + 1])}
-                          disabled={siblingIndex === siblings.length - 1}
-                        >
-                          <LeftArrowIcon size={12} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>پیام بعدی</TooltipContent>
-                    </Tooltip>
-                  </div>
-                )}
-              </>
-            )}
-
-            {message.content && mode === 'edit' && editMessage !== undefined && (
-              <div className="flex flex-row gap-2 items-start">
-                <div className="size-8" />
-
-                <MessageEditor
-                  key={message.id}
-                  message={message}
-                  setMode={setMode}
-                  editMessage={editMessage}
-                />
-              </div>
-            )}
-
-            {message.toolInvocations && message.toolInvocations.length > 0 && (
-              <div className="flex flex-col gap-4">
-                {message.toolInvocations.map((toolInvocation) => {
-                  const { toolName, toolCallId, state, args } = toolInvocation;
-
-                  if (state === 'result') {
-                    const { result } = toolInvocation;
-
-                    return (
-                      <div key={toolCallId}>
-                        {toolName === 'getWeather' ? (
-                          <Weather weatherAtLocation={result} />
-                        ) : toolName === 'createDocument' ? (
-                          <DocumentPreview
-                            isReadonly={isReadonly}
-                            result={result}
-                          />
-                        ) : toolName === 'updateDocument' ? (
-                          <DocumentToolResult
-                            type="update"
-                            result={result}
-                            isReadonly={isReadonly}
-                          />
-                        ) : toolName === 'requestSuggestions' ? (
-                          <DocumentToolResult
-                            type="request-suggestions"
-                            result={result}
-                            isReadonly={isReadonly}
-                          />
-                        ) : (
-                          <pre>{JSON.stringify(result, null, 2)}</pre>
+                        {message.role === 'user' && !isReadonly && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                data-testid="message-edit-button"
+                                variant="ghost"
+                                className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
+                                onClick={() => {
+                                  setMode('edit');
+                                }}
+                              >
+                                <PencilEditIcon />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>ویرایش پیام</TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
-                    );
-                  }
+
+                      {selectSibling !== undefined && siblings.length > 1 && (
+                        <div className='flex items-center'>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="p-1 h-fit rounded-md text-muted-foreground"
+                                onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex - 1])}
+                                disabled={siblingIndex === 0}
+                              >
+                                <RightArrowIcon size={12} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>پیام قبلی</TooltipContent>
+                          </Tooltip>
+
+                          <div className="px-0.5 pt-0.5 text-xs">{siblingIndex + 1}/{siblings.length}</div>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="p-1 h-fit rounded-md text-muted-foreground"
+                                onClick={() => selectSibling(message.serverId ?? message.id, siblings[siblingIndex + 1])}
+                                disabled={siblingIndex === siblings.length - 1}
+                              >
+                                <LeftArrowIcon size={12} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>پیام بعدی</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                if (mode === 'edit' && editMessage !== undefined) {
+                  return (
+                    <div key={key} className="flex flex-row gap-2 items-start">
+                      <div className="size-8" />
+
+                      <MessageEditor
+                        key={message.id}
+                        message={message}
+                        setMode={setMode}
+                        editMessage={editMessage}
+                      />
+                    </div>
+                  );
+                }
+              }
+
+              if (type === 'tool-invocation') {
+                const { toolInvocation } = part;
+                const { toolName, toolCallId, state } = toolInvocation;
+
+                if (state === 'call') {
+                  const { args } = toolInvocation;
+
                   return (
                     <div
                       key={toolCallId}
@@ -264,9 +246,40 @@ const PurePreviewMessage = ({
                       ) : null}
                     </div>
                   );
-                })}
-              </div>
-            )}
+                }
+
+                if (state === 'result') {
+                  const { result } = toolInvocation;
+
+                  return (
+                    <div key={toolCallId}>
+                      {toolName === 'getWeather' ? (
+                        <Weather weatherAtLocation={result} />
+                      ) : toolName === 'createDocument' ? (
+                        <DocumentPreview
+                          isReadonly={isReadonly}
+                          result={result}
+                        />
+                      ) : toolName === 'updateDocument' ? (
+                        <DocumentToolResult
+                          type="update"
+                          result={result}
+                          isReadonly={isReadonly}
+                        />
+                      ) : toolName === 'requestSuggestions' ? (
+                        <DocumentToolResult
+                          type="request-suggestions"
+                          result={result}
+                          isReadonly={isReadonly}
+                        />
+                      ) : (
+                        <pre>{JSON.stringify(result, null, 2)}</pre>
+                      )}
+                    </div>
+                  );
+                }
+              }
+            })}
 
             {!isReadonly && (
               <MessageActions
@@ -291,16 +304,9 @@ export const PreviewMessage = memo(
     // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
     return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (prevProps.message.reasoning !== nextProps.message.reasoning)
-      return false;
+    if (prevProps.message.id !== nextProps.message.id) return false;
+    if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
     if (prevProps.message.content !== nextProps.message.content) return false;
-    if (
-      !equal(
-        prevProps.message.toolInvocations,
-        nextProps.message.toolInvocations,
-      )
-    )
-      return false;
 
     if (prevProps.message.siblings?.length !== nextProps.message.siblings?.length) return false;
     if (!equal(prevProps.vote, nextProps.vote)) return false;
