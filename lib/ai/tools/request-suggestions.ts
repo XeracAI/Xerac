@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { Session } from 'next-auth';
-import { DataStreamWriter, streamObject, tool } from 'ai';
+import type { Session } from 'next-auth';
+import { type DataStreamWriter, streamObject, tool } from 'ai';
 import { getDocumentById, saveSuggestions } from '@/lib/db/queries';
-import { Suggestion } from '@/lib/db/schema';
-import { generateUUID } from '@/lib/utils';
+import type { Suggestion } from '@/lib/db/schema';
 import { myProvider } from '../providers';
 
 interface RequestSuggestionsProps {
@@ -53,7 +52,7 @@ export const requestSuggestions = ({
           originalText: element.originalSentence,
           suggestedText: element.suggestedSentence,
           description: element.description,
-          id: generateUUID(),
+          id: crypto.randomUUID(),
           documentId: documentId,
           isResolved: false,
         };

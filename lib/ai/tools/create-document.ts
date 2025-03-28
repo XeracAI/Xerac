@@ -1,4 +1,3 @@
-import { generateUUID } from '@/lib/utils';
 import { DataStreamWriter, tool } from 'ai';
 import { z } from 'zod';
 import { Session } from 'next-auth';
@@ -21,7 +20,7 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
       kind: z.enum(artifactKinds),
     }),
     execute: async ({ title, kind }) => {
-      const id = generateUUID();
+      const id = crypto.randomUUID();
 
       dataStream.writeData({
         type: 'kind',

@@ -16,7 +16,7 @@ import { ChatHeader } from '@/components/chat-header';
 import type { Vote, Chat } from '@/lib/db/schema';
 import type { Model } from '@/lib/ai/types';
 import type { ImageData } from '@/lib/ai/providers';
-import { fetcher, generateUUID, getMessageIdFromAnnotations } from '@/lib/utils';
+import { fetcher, getMessageIdFromAnnotations } from '@/lib/utils';
 import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
 
 import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
