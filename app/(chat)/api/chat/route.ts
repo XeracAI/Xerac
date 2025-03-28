@@ -147,10 +147,9 @@ export async function POST(request: Request) {
 
     const userMessageId = new mongoose.Types.ObjectId();
 
-    let messages: CoreMessage[], parent;
+    let messages: CoreMessage[], parent, title: string | undefined;
     if (!chat) {
-      const title = await generateTitleFromUserMessage({ message: userCoreMessage });
-      // TODO generate chat ID (UUID) on server
+      title = await generateTitleFromUserMessage({ message: userCoreMessage });
       await saveChat({ id, userId: session.user.id, title });
       messages = [userCoreMessage];
     } else {
@@ -233,6 +232,12 @@ export async function POST(request: Request) {
     } else {
       return createDataStreamResponse({
         execute: (dataStream) => {
+          if (title) {
+            dataStream.writeData({
+              type: 'chat-title',
+              content: title
+            });
+          }
           dataStream.writeData({
             type: 'user-message-id',
             content: userMessageId.toString(),

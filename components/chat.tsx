@@ -42,17 +42,13 @@ export function Chat({
   isReadonly: boolean;
   isNewConversation?: boolean;
 }) {
-  const { fetchAndUpdateChat, getChatById } = useChatHistoryCache();
+  const { updateChatInCache, getChatById } = useChatHistoryCache();
 
   const [allMessages, setAllMessages] = useState<UIMessage[]>(initialMessages);
   const [isNewConversationState, setIsNewConversationState] = useState<boolean>(isNewConversation);
   const [messageEdited, setMessageEdited] = useState<boolean>(false);
 
   const [currentChat, setCurrentChat] = useState<Chat>(getChatById(id) as Chat);
-  const updateCurrentChat = async () => {
-    const chat = await fetcher(`/api/chat?id=${id}`)
-    setCurrentChat(chat)
-  }
 
   const {
     messages,
@@ -69,10 +65,6 @@ export function Chat({
     id,
     initialMessages: constructDefaultBranchFromAIMessages(initialMessages),
     experimental_throttle: 100,
-    onFinish: async () => {
-      await fetchAndUpdateChat(id);
-      await updateCurrentChat();
-    },
     experimental_prepareRequestBody({messages}) {
       if (messages.length === 0) {
         throw Error("Empty message array!");
@@ -218,21 +210,28 @@ export function Chat({
     const mostRecentDelta = streamingData?.at(-1);
     if (!mostRecentDelta || typeof mostRecentDelta !== 'object') return;
     // @ts-expect-error type is not defined in MessageAnnotation
-    if (mostRecentDelta.type === 'user-message-id') {
-      const lastUserMessageIndex = messages.findLastIndex((message) => message.role === 'user');
-      const lastUserMessage = messages[lastUserMessageIndex];
-      // @ts-expect-error content is not defined in JSONValue
-      lastUserMessage.serverId = mostRecentDelta.content;
-      lastMessage.parent = lastUserMessage.serverId;
-      if (lastUserMessage.siblings && !lastUserMessage.siblings.some((s) => s === lastUserMessage.serverId)) {
-        lastUserMessage.siblings[lastUserMessage.siblings.findIndex((s) => s === lastUserMessage.id)] = lastUserMessage.serverId as string;
-      }
-      setMessages(messages.map((message, index) => index === lastUserMessageIndex ? {
-        ...message,
+    switch (mostRecentDelta.type) {
+      case 'user-message-id':
+        const lastUserMessageIndex = messages.findLastIndex((message) => message.role === 'user');
+        const lastUserMessage = messages[lastUserMessageIndex];
         // @ts-expect-error content is not defined in JSONValue
-        serverId: mostRecentDelta.content,
-        siblings: lastUserMessage.siblings,
-      } : message));
+        lastUserMessage.serverId = mostRecentDelta.content;
+        lastMessage.parent = lastUserMessage.serverId;
+        if (lastUserMessage.siblings && !lastUserMessage.siblings.some((s) => s === lastUserMessage.serverId)) {
+          lastUserMessage.siblings[lastUserMessage.siblings.findIndex((s) => s === lastUserMessage.id)] = lastUserMessage.serverId as string;
+        }
+        setMessages(messages.map((message, index) => index === lastUserMessageIndex ? {
+          ...message,
+          // @ts-expect-error content is not defined in JSONValue
+          serverId: mostRecentDelta.content,
+          siblings: lastUserMessage.siblings,
+        } : message));
+        break;
+      case 'chat-title':
+        // @ts-expect-error content is not defined in JSONValue
+        const title = mostRecentDelta.content;
+        setCurrentChat({ ...currentChat, title });
+        updateChatInCache(id, { title });
     }
   }, [streamingData])
 
