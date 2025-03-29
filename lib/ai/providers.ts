@@ -1,10 +1,11 @@
-import { customProvider, extractReasoningMiddleware, wrapLanguageModel } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { customProvider } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
+import { vertex } from '@ai-sdk/google-vertex';
 
-import { customMiddleware } from './custom-middleware';
 import { isTestEnvironment } from '@/lib/constants';
 import { artifactModel, chatModel, reasoningModel, titleModel } from '@/lib/ai/models.test';
-import { fireworks } from '@ai-sdk/fireworks';
 
 export interface ImageData {
   b64_json?: string;
@@ -15,11 +16,6 @@ export interface ImageData {
 interface ImageObject {
   data: Array<ImageData>;
 }
-
-const openai = createOpenAI({
-  baseURL: process.env.LITELLM_BASE_URL,
-  apiKey: process.env.LITELLM_API_KEY
-});
 
 export const myProvider = isTestEnvironment
   ? customProvider({
@@ -33,13 +29,7 @@ export const myProvider = isTestEnvironment
     })
   : customProvider({
       languageModels: {
-        'chat-model-small': openai('gpt-4o-mini'),
-        'chat-model-large': openai('gpt-4o'),
-        'chat-model-reasoning': wrapLanguageModel({
-          model: fireworks('accounts/fireworks/models/deepseek-r1'),
-          middleware: extractReasoningMiddleware({ tagName: 'think' }),
-        }),
-        'title-model': openai('gpt-4-turbo'),
+        'title-model': openai('gpt-4o'),
         'artifact-model': openai('gpt-4o-mini'),
       },
       imageModels: {
@@ -48,19 +38,28 @@ export const myProvider = isTestEnvironment
       },
     });
 
-export const customModel = (apiIdentifier: string) => {
-  return wrapLanguageModel({
-    model: openai(apiIdentifier),
-    middleware: customMiddleware,
-  });
+export const getChatModel = (provider: string, apiIdentifier: string) => {
+  switch (provider) {
+    case 'openai':
+      return openai(apiIdentifier);
+    case 'anthropic':
+      return anthropic(apiIdentifier);
+    case 'google':
+      return google(apiIdentifier);
+    default:
+      throw new Error('Invalid provider');
+  }
 };
 
-export const customImageModel = (apiIdentifier: string) => {
-  return openai.image(apiIdentifier);
-  // return wrapLanguageModel({
-  //   model: openai.image(apiIdentifier),
-  //   middleware: customMiddleware,
-  // });
+export const getImageModel = (provider: string, apiIdentifier: string) => {
+  switch (provider) {
+    case 'openai':
+      return openai.image(apiIdentifier);
+    case 'vertex':
+      return vertex.image(apiIdentifier);
+    default:
+      throw new Error('Invalid provider');
+  }
 };
 
 export const generateImage = async ({prompt, model}: { prompt: string, model: any }): Promise<ImageData> => {

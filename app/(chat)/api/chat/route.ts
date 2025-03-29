@@ -17,7 +17,7 @@ import mongoose from 'mongoose';
 
 import { auth } from '@/app/(auth)/auth';
 
-import { customModel, customImageModel, generateImage } from '@/lib/ai/providers';
+import { getChatModel, getImageModel, generateImage } from '@/lib/ai/providers';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {
   addChildToMessage,
@@ -208,7 +208,7 @@ export async function POST(request: Request) {
     });
 
     if (model.outputTypes.includes('Image')) {
-      const imageData = await generateImage({ prompt: content, model: customImageModel(model.apiIdentifier) });
+      const imageData = await generateImage({ prompt: content, model: getImageModel(model.provider, model.apiIdentifier) });
 
       // TODO save image in Minio and save file path in db
 
@@ -244,7 +244,7 @@ export async function POST(request: Request) {
           });
 
           const result = streamText({
-            model: customModel(model.apiIdentifier),
+            model: getChatModel(model.provider, model.apiIdentifier),
             system: systemPrompt({ selectedChatModel: model.apiIdentifier }),
             messages,
             maxSteps: 5,
