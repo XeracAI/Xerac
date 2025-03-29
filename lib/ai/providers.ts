@@ -40,11 +40,11 @@ export const myProvider = isTestEnvironment
 
 export const getChatModel = (provider: string, apiIdentifier: string) => {
   switch (provider) {
-    case 'openai':
+    case 'OpenAI':
       return openai(apiIdentifier);
-    case 'anthropic':
+    case 'Anthropic':
       return anthropic(apiIdentifier);
-    case 'google':
+    case 'Google':
       return google(apiIdentifier);
     default:
       throw new Error('Invalid provider');
@@ -53,9 +53,9 @@ export const getChatModel = (provider: string, apiIdentifier: string) => {
 
 export const getImageModel = (provider: string, apiIdentifier: string) => {
   switch (provider) {
-    case 'openai':
+    case 'OpenAI':
       return openai.image(apiIdentifier);
-    case 'vertex':
+    case 'Vertex':
       return vertex.image(apiIdentifier);
     default:
       throw new Error('Invalid provider');

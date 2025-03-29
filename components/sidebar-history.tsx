@@ -124,7 +124,7 @@ const PureChatItem = ({
           <BetterTooltip content={chat.title} align="start">
             <SidebarMenuButton asChild isActive={isActive}>
               <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-                <span>{chat.title}</span>
+                <span style={{ direction: checkEnglishString(chat.title) ? "ltr" : "rtl" }}>{chat.title}</span>
               </Link>
             </SidebarMenuButton>
           </BetterTooltip>

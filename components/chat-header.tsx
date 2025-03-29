@@ -18,6 +18,7 @@ import type { Model } from '@/lib/ai/types';
 import { useSidebar } from './ui/sidebar';
 import { PlusIcon } from './icons';
 import { type VisibilityType, VisibilitySelector } from './visibility-selector';
+import { checkEnglishString } from "@/lib/utils";
 
 function PureChatHeader({
   chatId,
@@ -73,7 +74,7 @@ function PureChatHeader({
         />
       )}
 
-      <div className="order-4 mx-auto">{chat?.title || "چت جدید"}</div>
+      <div className="order-4 mx-auto" style={{ direction: checkEnglishString(chat?.title) ? "ltr" : "rtl" }}>{chat?.title || "چت جدید"}</div>
 
       <button className="hidden md:flex py-1.5 px-2 h-fit md:h-[34px] order-5 md:mr-auto theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="size-6">
