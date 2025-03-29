@@ -70,7 +70,7 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 
 - Appropriate RTL support
 - Message editing and conversation branching
-- Support for different model providers via LiteLLM
+- Support for different model providers
 - Dynamic model list fetched from database instead of hard-coded options, with user customization
 - Support for different modalities
   - Image generation
