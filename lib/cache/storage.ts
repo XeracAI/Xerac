@@ -84,10 +84,12 @@ class Storage {
   }
 
   public async initialize(): Promise<void> {
-    await Promise.all([
-      this.initializeModels(),
-      this.initializeMeta()
-    ]);
+    if (process.env.CI !== 'true') {
+      await Promise.all([
+        this.initializeModels(),
+        this.initializeMeta()
+      ]);
+    }
     this.initialized = true;
   }
 
