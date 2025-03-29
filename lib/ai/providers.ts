@@ -41,7 +41,7 @@ export const myProvider = isTestEnvironment
 export const getChatModel = (provider: string, apiIdentifier: string) => {
   switch (provider) {
     case 'OpenAI':
-      return openai(apiIdentifier);
+      return openai.responses(apiIdentifier);
     case 'Anthropic':
       return anthropic(apiIdentifier);
     case 'Google':
