@@ -19,6 +19,12 @@ import { auth } from '@/app/(auth)/auth';
 
 import { getChatModel, getImageModel, generateImage } from '@/lib/ai/providers';
 import { systemPrompt } from '@/lib/ai/prompts';
+
+import { createDocument } from '@/lib/ai/tools/create-document';
+import { updateDocument } from '@/lib/ai/tools/update-document';
+import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
+import { getWeather } from '@/lib/ai/tools/get-weather';
+
 import {
   addChildToMessage,
   deleteChatById,
@@ -29,15 +35,10 @@ import {
   updateChatById,
 } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
-
-import { createDocument } from '@/lib/ai/tools/create-document';
-import { updateDocument } from '@/lib/ai/tools/update-document';
-import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-import { getWeather } from '@/lib/ai/tools/get-weather';
-
 import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 import { isProductionEnvironment } from '@/lib/constants';
 import { getAIModelById } from '@/lib/cache';
+import type { UsageSchema } from '@/lib/db/mongoose-schema';
 
 import { generateTitleFromUserMessage } from '../../chat/actions';
 
@@ -259,46 +260,66 @@ export async function POST(request: Request) {
                 dataStream,
               }),
             },
-            onFinish: async ({ response }) => {
-              if (session.user?.id) {
-                try {
-                  const assistantMessages = response.messages.filter(
-                    (message) => message.role === 'assistant',
-                  )
+            onFinish: async ({ response, usage, providerMetadata }) => {
+              try {
+                const assistantMessages = response.messages.filter(
+                  (message) => message.role === 'assistant',
+                )
 
-                  if (assistantMessages.length === 0) {
-                    throw new Error('No assistant message found!');
-                  }
-
-                  const [, assistantMessage] = appendResponseMessages({
-                    messages: [{ ...userMessage, id }],
-                    responseMessages: response.messages,
-                  });
-
-                  const assistantMessageId = new mongoose.Types.ObjectId();
-                  await saveMessages({
-                    messages: [
-                      {
-                        _id: assistantMessageId,
-                        chatId: id,
-                        role: 'assistant',
-                        parts: assistantMessage.parts,
-                        attachments: assistantMessage.experimental_attachments ?? [],
-
-                        modelId,
-
-                        parent: userMessageId,
-                        children: [],
-                      }
-                    ]
-                  });
-                  dataStream.writeMessageAnnotation({
-                    messageIdFromServer: assistantMessageId.toString(),
-                  });
-                  dataStream.writeMessageAnnotation({ modelId });
-                } catch (error) {
-                  console.error('Failed to save chat', error);
+                if (assistantMessages.length === 0) {
+                  throw new Error('No assistant message found!');
                 }
+
+                const [, assistantMessage] = appendResponseMessages({
+                  messages: [{ ...userMessage, id }],
+                  responseMessages: response.messages,
+                });
+
+                // Usage extraction
+                const usageObject = usage as UsageSchema;
+                if (model.provider === 'OpenAI' && providerMetadata?.openai) {
+                  if (providerMetadata.openai.reasoningTokens) {
+                    usageObject.reasoningTokens = providerMetadata.openai.reasoningTokens as number;
+                  }
+                  if (providerMetadata.openai.cachedPromptTokens) {
+                    usageObject.cacheReadTokens = providerMetadata.openai.cachedPromptTokens as number;
+                  }
+                } else if (model.provider === 'Anthropic' && providerMetadata?.anthropic) {
+                  if (providerMetadata.anthropic.cacheCreationInputTokens) {
+                    usageObject.cacheWriteTokens = providerMetadata.anthropic.cacheCreationInputTokens as number;
+                  }
+                  if (providerMetadata.anthropic.cacheReadInputTokens) {
+                    usageObject.cacheReadTokens = providerMetadata.anthropic.cacheReadInputTokens as number;
+                  }
+                }
+
+                const assistantMessageId = new mongoose.Types.ObjectId();
+                await saveMessages({
+                  messages: [
+                    {
+                      _id: assistantMessageId,
+                      chatId: id,
+                      role: 'assistant',
+                      parts: assistantMessage.parts,
+                      attachments: assistantMessage.experimental_attachments ?? [],
+
+                      modelId,
+
+                      parent: userMessageId,
+                      children: [],
+
+                      usage: usageObject,
+                    }
+                  ]
+                });
+                addChildToMessage(userMessageId, assistantMessageId);
+
+                dataStream.writeMessageAnnotation({
+                  messageIdFromServer: assistantMessageId.toString(),
+                });
+                dataStream.writeMessageAnnotation({ modelId });
+              } catch (error) {
+                console.error('Failed to save chat', error);
               }
             },
             experimental_telemetry: {
