@@ -35,10 +35,10 @@ import {
   updateChatById,
 } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
+import { calculateCost, extractUsage } from '@/lib/ai/usage';
 import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 import { isProductionEnvironment } from '@/lib/constants';
 import { getAIModelById } from '@/lib/cache';
-import type { UsageSchema } from '@/lib/db/mongoose-schema';
 
 import { generateTitleFromUserMessage } from '../../chat/actions';
 
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
 
     const userMessageId = new mongoose.Types.ObjectId();
 
-    let messages: CoreMessage[], parent, title: string | undefined;
+    let messages: CoreMessage[], parent, title: string | undefined, otherCosts = 0;
     if (!chat) {
       title = await generateTitleFromUserMessage({ message: userCoreMessage });
       await saveChat({ id, userId: session.user.id, title });
@@ -211,6 +211,7 @@ export async function POST(request: Request) {
     if (model.outputTypes.includes('Image')) {
       const imageData = await generateImage({ prompt: content, model: getImageModel(model.provider, model.apiIdentifier) });
 
+      // TODO calculate image generation cost
       // TODO save image in Minio and save file path in db
 
       try {
@@ -276,22 +277,11 @@ export async function POST(request: Request) {
                 });
 
                 // Usage extraction
-                const usageObject = usage as UsageSchema;
-                if (model.provider === 'OpenAI' && providerMetadata?.openai) {
-                  if (providerMetadata.openai.reasoningTokens) {
-                    usageObject.reasoningTokens = providerMetadata.openai.reasoningTokens as number;
-                  }
-                  if (providerMetadata.openai.cachedPromptTokens) {
-                    usageObject.cacheReadTokens = providerMetadata.openai.cachedPromptTokens as number;
-                  }
-                } else if (model.provider === 'Anthropic' && providerMetadata?.anthropic) {
-                  if (providerMetadata.anthropic.cacheCreationInputTokens) {
-                    usageObject.cacheWriteTokens = providerMetadata.anthropic.cacheCreationInputTokens as number;
-                  }
-                  if (providerMetadata.anthropic.cacheReadInputTokens) {
-                    usageObject.cacheReadTokens = providerMetadata.anthropic.cacheReadInputTokens as number;
-                  }
-                }
+                const usageObject = extractUsage(usage, providerMetadata, model);
+
+                // Cost calculation
+                usageObject.totalCost = calculateCost(usageObject, model);
+                usageObject.otherCosts = otherCosts;
 
                 const assistantMessageId = new mongoose.Types.ObjectId();
                 await saveMessages({

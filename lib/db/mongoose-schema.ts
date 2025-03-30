@@ -1,12 +1,12 @@
 import mongoose, { Schema } from 'mongoose';
 
-export interface UsageSchema {
-  promptTokens?: number;
-  completionTokens?: number;
+export interface Usage {
+  promptTokens: number;
+  completionTokens: number;
   reasoningTokens?: number;
   cacheWriteTokens?: number;
   cacheReadTokens?: number;
-  totalTokens?: number;
+  totalTokens: number;
 
   otherCosts?: number;
   totalCost?: number;
@@ -32,7 +32,7 @@ export interface IMessageInsert {
   parent?: mongoose.Types.ObjectId | undefined;
   children: mongoose.Types.ObjectId[];
 
-  usage?: UsageSchema;
+  usage?: Usage;
 }
 
 export interface IMessage extends IMessageInsert {
@@ -90,12 +90,12 @@ const messageSchema = new Schema<IMessage>({
   children: { type: [mongoose.Types.ObjectId], default: [] },
 
   usage: {
-    promptTokens: { type: Number, required: false },
-    completionTokens: { type: Number, required: false },
+    promptTokens: { type: Number, required: true },
+    completionTokens: { type: Number, required: true },
     reasoningTokens: { type: Number, required: false },
     cacheWriteTokens: { type: Number, required: false },
     cacheReadTokens: { type: Number, required: false },
-    totalTokens: { type: Number, required: false },
+    totalTokens: { type: Number, required: true },
 
     otherCosts: { type: Number, required: false },
     totalCost: { type: Number, required: false },
