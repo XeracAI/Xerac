@@ -27,9 +27,11 @@ import { getWeather } from '@/lib/ai/tools/get-weather';
 
 import {
   addChildToMessage,
+  deductBalance,
   deleteChatById,
   getChatById,
   getMessagesByChatId,
+  hasBalance,
   saveChat,
   saveMessages,
   updateChatById,
@@ -125,6 +127,7 @@ export async function POST(request: Request) {
     if (!session || !session.user || !session.user.id) {
       return new Response('Unauthorized!', { status: 401 });
     }
+    const userId = session.user.id;
 
     // Validations
     if (id === undefined) {
@@ -145,8 +148,21 @@ export async function POST(request: Request) {
       return new Response('Model not found!', { status: 404 });
     }
 
-    const userMessage = { role: 'user', content, experimental_attachments: attachments } as Message;
-    const userCoreMessage = convertToCoreMessages([userMessage]).at(-1) as CoreUserMessage;
+    if (!session.user.isAdmin && !(await hasBalance(userId))) {
+      return new Response(
+        'Insufficient balance! Please add credits to continue',
+        { status: 402 },
+      );
+    }
+
+    const userMessage = {
+      role: 'user',
+      content,
+      experimental_attachments: attachments,
+    } as Message;
+    const userCoreMessage = convertToCoreMessages([userMessage]).at(
+      -1,
+    ) as CoreUserMessage;
 
     const chat = await getChatById({ id });
 
@@ -158,10 +174,10 @@ export async function POST(request: Request) {
     const otherCosts = 0;
     if (!chat) {
       title = await generateTitleFromUserMessage({ message: userCoreMessage });
-      await saveChat({ id, userId: session.user.id, title });
+      await saveChat({ id, userId, title });
       messages = [userCoreMessage];
     } else {
-      if (chat.userId !== session.user.id) {
+      if (chat.userId !== userId) {
         return new Response('Unauthorized', { status: 401 });
       }
 
@@ -308,6 +324,8 @@ export async function POST(request: Request) {
                 // Cost calculation
                 usageObject.totalCost = calculateCost(usageObject, model);
                 usageObject.otherCosts = otherCosts;
+
+                await deductBalance(userId, usageObject.totalCost);
 
                 const assistantMessageId = new mongoose.Types.ObjectId();
                 await saveMessages({

@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "balance" numeric(10, 6) DEFAULT 0 NOT NULL;

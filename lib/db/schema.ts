@@ -61,9 +61,15 @@ export const user = pgTable(
     firstName: varchar('firstName', { length: 50 }),
     lastName: varchar('lastName', { length: 50 }),
 
-  referralCode: varchar('referralCode', { length: 10 }).unique(),
-  referrer: uuid().references((): AnyPgColumn => user.id),
-  referrerDiscountUsed: boolean('referrerDiscountUsed').notNull().default(false),
+    referralCode: varchar('referralCode', { length: 10 }).unique(),
+    referrer: uuid('referrer').references((): AnyPgColumn => user.id),
+    referrerDiscountUsed: boolean('referrerDiscountUsed')
+      .notNull()
+      .default(false),
+
+    balance: numericCasted('balance', { precision: 10, scale: 6 })
+      .notNull()
+      .default(0),
 
     isAdmin: boolean('isAdmin').default(false).notNull(),
 
