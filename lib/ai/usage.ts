@@ -34,12 +34,10 @@ export function extractUsage(
 
 export function calculateCost(usage: Usage, model: Model): number {
   return (
-    (usage.cacheReadTokens || 0) * (model.cacheReadCost || 0)
-  ) + (
-    (usage.cacheWriteTokens || 0) * (model.cacheWriteCost || 0)
-  ) + (
-    usage.completionTokens * (model.outputCost || 0)
-  ) + (
-    usage.promptTokens * (model.inputCost || 0)
+    ((usage.cacheReadTokens || 0) * (model.cacheReadCost || 0) +
+      (usage.cacheWriteTokens || 0) * (model.cacheWriteCost || 0) +
+      (usage.completionTokens || 0) * (model.outputCost || 0) +
+      (usage.promptTokens || 0) * (model.inputCost || 0)) /
+    10e6
   );
 }
