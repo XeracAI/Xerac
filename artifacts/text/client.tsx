@@ -13,6 +13,7 @@ import {
 import { Suggestion } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { getSuggestions } from '../actions';
+import { checkEnglishString } from '@/lib/utils';
 
 interface TextArtifactMetadata {
   suggestions: Array<Suggestion>;
@@ -79,24 +80,23 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
     }
 
     return (
-      <>
-        <div className="flex flex-row py-8 md:p-20 px-4">
-          <Editor
-            content={content}
-            suggestions={metadata ? metadata.suggestions : []}
-            isCurrentVersion={isCurrentVersion}
-            currentVersionIndex={currentVersionIndex}
-            status={status}
-            onSaveContent={onSaveContent}
-          />
+      <div
+        className="flex flex-row py-8 md:p-20 px-4"
+        style={{ direction: checkEnglishString(content) ? 'ltr' : 'rtl' }}
+      >
+        <Editor
+          content={content}
+          suggestions={metadata ? metadata.suggestions : []}
+          isCurrentVersion={isCurrentVersion}
+          currentVersionIndex={currentVersionIndex}
+          status={status}
+          onSaveContent={onSaveContent}
+        />
 
-          {metadata &&
-          metadata.suggestions &&
-          metadata.suggestions.length > 0 ? (
-            <div className="md:hidden h-dvh w-12 shrink-0" />
-          ) : null}
-        </div>
-      </>
+        {metadata?.suggestions && metadata.suggestions.length > 0 ? (
+          <div className="md:hidden h-dvh w-12 shrink-0" />
+        ) : null}
+      </div>
     );
   },
   actions: [
@@ -106,7 +106,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       onClick: ({ handleVersionChange }) => {
         handleVersionChange('toggle');
       },
-      isDisabled: ({ currentVersionIndex, setMetadata }) => {
+      isDisabled: ({ currentVersionIndex }) => {
         if (currentVersionIndex === 0) {
           return true;
         }
