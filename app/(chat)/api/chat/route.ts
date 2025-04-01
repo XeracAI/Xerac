@@ -12,7 +12,7 @@ import {
   // We don't use Vercel AI SDK generateImage, because it only handles base 64 response for now
   // experimental_generateImage as generateImage
 } from 'ai';
-import type { Attachment } from "@ai-sdk/ui-utils";
+import type { Attachment } from '@ai-sdk/ui-utils';
 import mongoose from 'mongoose';
 
 import { auth } from '@/app/(auth)/auth';
@@ -36,7 +36,10 @@ import {
 } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 import { calculateCost, extractUsage } from '@/lib/ai/usage';
-import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
+import {
+  constructBranchFromDBMessages,
+  constructBranchUntilDBMessage,
+} from '@/lib/tree';
 import { isProductionEnvironment } from '@/lib/constants';
 import { getAIModelById } from '@/lib/cache';
 
@@ -53,7 +56,8 @@ interface POSTRouteBody {
 
 export const maxDuration = 60;
 
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type AllowedTools =
   | 'createDocument'
@@ -148,7 +152,10 @@ export async function POST(request: Request) {
 
     const userMessageId = new mongoose.Types.ObjectId();
 
-    let messages: CoreMessage[], parent, title: string | undefined, otherCosts = 0;
+    let messages: CoreMessage[];
+    let parent;
+    let title: string | undefined;
+    const otherCosts = 0;
     if (!chat) {
       title = await generateTitleFromUserMessage({ message: userCoreMessage });
       await saveChat({ id, userId: session.user.id, title });
@@ -159,7 +166,8 @@ export async function POST(request: Request) {
       }
 
       const dbMessages = await getMessagesByChatId({ id });
-      if (dbMessages.length === 0) { // An empty chat should never exist but just in case
+      if (dbMessages.length === 0) {
+        // An empty chat should never exist but just in case
         messages = [userCoreMessage];
       } else {
         if (mongoose.isValidObjectId(siblingId)) {
@@ -170,10 +178,16 @@ export async function POST(request: Request) {
 
           const branch = constructBranchUntilDBMessage(leaf, dbMessages);
           parent = leaf.parent;
-          messages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
+          messages = [
+            ...convertToCoreMessages(convertToUIMessages(branch)),
+            userCoreMessage,
+          ];
         } else {
           if (parentId === undefined) {
-            return new Response('Must provide a valid parent message ID for non-empty chats!', { status: 400 });
+            return new Response(
+              'Must provide a valid parent message ID for non-empty chats!',
+              { status: 400 },
+            );
           } else if (!mongoose.isValidObjectId(parentId)) {
             return new Response('Invalid parent message ID!', { status: 400 });
           }
@@ -184,7 +198,10 @@ export async function POST(request: Request) {
           }
 
           const branch = constructBranchFromDBMessages(parent, dbMessages);
-          messages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
+          messages = [
+            ...convertToCoreMessages(convertToUIMessages(branch)),
+            userCoreMessage,
+          ];
           parent = parent._id;
         }
 
@@ -209,22 +226,27 @@ export async function POST(request: Request) {
     });
 
     if (model.outputTypes.includes('Image')) {
-      const imageData = await generateImage({ prompt: content, model: getImageModel(model.provider, model.apiIdentifier) });
+      const imageData = await generateImage({
+        prompt: content,
+        model: getImageModel(model.provider, model.apiIdentifier),
+      });
 
       // TODO calculate image generation cost
       // TODO save image in Minio and save file path in db
 
       try {
         await saveMessages({
-          messages: [{
-            chatId: id,
-            role: 'assistant',
-            images: [imageData],
-            attachments: [],
-            modelId,
-            parent: userMessageId,
-            children: [],
-          }],
+          messages: [
+            {
+              chatId: id,
+              role: 'assistant',
+              images: [imageData],
+              attachments: [],
+              modelId,
+              parent: userMessageId,
+              children: [],
+            },
+          ],
         });
       } catch (error) {
         console.error('Failed to save chat', error);
@@ -237,7 +259,7 @@ export async function POST(request: Request) {
           if (title) {
             dataStream.writeData({
               type: 'chat-title',
-              content: title
+              content: title,
             });
           }
           dataStream.writeData({
@@ -265,7 +287,7 @@ export async function POST(request: Request) {
               try {
                 const assistantMessages = response.messages.filter(
                   (message) => message.role === 'assistant',
-                )
+                );
 
                 if (assistantMessages.length === 0) {
                   throw new Error('No assistant message found!');
@@ -277,7 +299,11 @@ export async function POST(request: Request) {
                 });
 
                 // Usage extraction
-                const usageObject = extractUsage(usage, providerMetadata, model);
+                const usageObject = extractUsage(
+                  usage,
+                  providerMetadata,
+                  model,
+                );
 
                 // Cost calculation
                 usageObject.totalCost = calculateCost(usageObject, model);
@@ -291,7 +317,8 @@ export async function POST(request: Request) {
                       chatId: id,
                       role: 'assistant',
                       parts: assistantMessage.parts,
-                      attachments: assistantMessage.experimental_attachments ?? [],
+                      attachments:
+                        assistantMessage.experimental_attachments ?? [],
 
                       modelId,
 
@@ -299,8 +326,8 @@ export async function POST(request: Request) {
                       children: [],
 
                       usage: usageObject,
-                    }
-                  ]
+                    },
+                  ],
                 });
                 addChildToMessage(userMessageId, assistantMessageId);
 
@@ -324,7 +351,7 @@ export async function POST(request: Request) {
             sendReasoning: true,
           });
         },
-        onError: error => {
+        onError: (error) => {
           // Error messages are masked by default for security reasons.
           // If you want to expose the error message to the client, you can do so here:
           return error instanceof Error ? error.message : String(error);
@@ -332,7 +359,6 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
-    console.log("HERE", typeof error, error);
     return NextResponse.json({ error }, { status: 400 });
   }
 }
@@ -364,9 +390,12 @@ export async function PATCH(request: Request) {
 
     return new Response('Chat updated', { status: 200 });
   } catch (error) {
-    return new Response(`An error occurred while processing your request: ${error}`, {
-      status: 500,
-    });
+    return new Response(
+      `An error occurred while processing your request: ${error}`,
+      {
+        status: 500,
+      },
+    );
   }
 }
 
@@ -395,8 +424,11 @@ export async function DELETE(request: Request) {
 
     return new Response('Chat deleted', { status: 200 });
   } catch (error) {
-    return new Response(`An error occurred while processing your request: ${error}`, {
-      status: 500,
-    });
+    return new Response(
+      `An error occurred while processing your request: ${error}`,
+      {
+        status: 500,
+      },
+    );
   }
 }

@@ -1,8 +1,9 @@
 import { config } from 'dotenv';
 import { seedDatabase } from '@/lib/db/seeds/data';
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import dbConnect from "@/lib/db/connect";
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import dbConnect from '@/lib/db/connect';
+import mongoosejs from 'mongoose';
 
 // Load environment variables
 config({
@@ -37,7 +38,7 @@ const runSeed = async () => {
   } finally {
     // Close the database connections
     await client.end();
-    await mongoose.disconnect();
+    await mongoosejs.disconnect();
   }
 };
 

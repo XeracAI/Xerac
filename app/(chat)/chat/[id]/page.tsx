@@ -15,21 +15,19 @@ import { ModelContextProvider } from '@/contexts/models';
 import { convertToUIMessages } from '@/lib/utils';
 
 type Props = {
-  params: Promise<{ id: string }>
-}
+  params: Promise<{ id: string }>;
+};
 
-export async function generateMetadata(
-  { params }: Props,
-): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // read route params
-  const id = (await params).id
+  const id = (await params).id;
 
   // fetch data
   const chat = await getChatById({ id });
 
   return {
     title: `${chat.title} | زیرک`,
-  }
+  };
 }
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
@@ -66,14 +64,16 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     DEFAULT_CHAT_MODEL_ID;
   const selectedModel = getAIModelById(selectedModelId);
   if (selectedModel === undefined) {
-    return <div>Something went very wrong!</div>
+    return <div>Something went very wrong!</div>;
   }
 
   return (
     <>
       <ModelContextProvider
-        initialModels={chatModels.map(model => injectIconToModel(model))}
-        initialUserModelGroups={session?.user?.id ? await fetchUserModelGroups(session.user.id) : null}
+        initialModels={chatModels.map((model) => injectIconToModel(model))}
+        initialUserModelGroups={
+          session?.user?.id ? await fetchUserModelGroups(session.user.id) : null
+        }
       >
         <Chat
           id={chat.id}

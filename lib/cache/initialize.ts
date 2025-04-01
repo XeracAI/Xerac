@@ -1,4 +1,8 @@
-import modelCache, { getModelsLastRefreshedTime, getMetaLastRefreshedTime } from './storage';
+import {
+  getModelsLastRefreshedTime,
+  getMetaLastRefreshedTime,
+  modelCache,
+} from './storage';
 
 /**
  * Initialize all caches (AI models and Meta documents).

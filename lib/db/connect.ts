@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoosejs from 'mongoose';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -16,7 +16,7 @@ async function dbConnect() {
 
   if (!MONGODB_URI) {
     throw new Error(
-      "Please define the MONGODB_URI environment variable inside .env.local",
+      'Please define the MONGODB_URI environment variable inside .env.local',
     );
   }
 
@@ -27,9 +27,7 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
     };
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoosejs.connect(MONGODB_URI, opts);
   }
   try {
     cached.conn = await cached.promise;
