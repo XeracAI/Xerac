@@ -77,8 +77,8 @@ export function Chat({
       }
 
       const message = messages[messages.length - 1];
-      let parentId: string;
-      let siblingId: string;
+      let parentId: string | undefined;
+      let siblingId: string | undefined;
       if (messages.length === 1 && message.siblings?.length !== 0) {
         siblingId = message.serverId ?? message.id;
       } else if (messages.length > 1) {
