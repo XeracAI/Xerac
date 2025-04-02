@@ -58,6 +58,7 @@ export function Chat({
     setInput,
     append,
     status,
+    error,
     stop,
     reload,
     data: streamingData,
@@ -281,6 +282,7 @@ export function Chat({
           chatId={id}
           status={status}
           votes={votes}
+          error={error}
           messages={messages}
           editMessage={editMessage}
           changeBranch={changeBranch}

@@ -15,6 +15,7 @@ interface MessagesProps {
   chatId: string;
   status: UseChatHelpers['status'];
   votes: Array<Vote> | undefined;
+  error: Error | undefined;
   messages: Array<UIMessage>;
   editMessage?: (messageId: string, newContent: string) => void;
   changeBranch: (nodeId: string, siblingId: string) => void;
@@ -28,6 +29,7 @@ function PureMessages({
   chatId,
   status,
   votes,
+  error,
   messages,
   editMessage,
   changeBranch,
@@ -56,10 +58,10 @@ function PureMessages({
 
       {status === 'submitted' && messages.length > 0 && messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 
-      <div
-        ref={messagesEndRef}
-        className="shrink-0 min-w-[24px] min-h-[24px]"
-      />
+      {/* TODO add a retry button */}
+      {error && <p className="text-red-500">Error: {error.message}</p>}
+
+      <div ref={messagesEndRef} className="shrink-0 min-w-[24px] min-h-[24px]" />
     </div>
   );
 }
