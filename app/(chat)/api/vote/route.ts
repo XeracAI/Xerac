@@ -31,12 +31,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const {
-    chatId,
-    messageId,
-    type,
-  }: { chatId: string; messageId: string; type: 'up' | 'down' } =
-    await request.json();
+  const { chatId, messageId, type }: { chatId: string; messageId: string; type: 'up' | 'down' } = await request.json();
 
   if (!chatId || !messageId || !type) {
     return new Response('messageId and type are required', { status: 400 });
@@ -44,7 +39,7 @@ export async function PATCH(request: Request) {
 
   const session = await auth();
 
-  if (!session || !session.user || !session.user.email) {
+  if (!session || !session.user || !session.user.id) {
     return new Response('Unauthorized', { status: 401 });
   }
 
