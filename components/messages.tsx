@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import equal from 'fast-deep-equal';
 
-import { UIMessage } from 'ai';
-import { UseChatHelpers } from '@ai-sdk/react';
+import type { UIMessage } from 'ai';
+import type { UseChatHelpers } from '@ai-sdk/react';
 
 import type { Vote } from '@/lib/db/schema';
 import type { Model } from '@/lib/ai/types';
@@ -35,14 +35,10 @@ function PureMessages({
   selectedModel,
   isNewConversation,
 }: MessagesProps) {
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
+  const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
 
   return (
-    <div
-      ref={messagesContainerRef}
-      className="flex flex-col min-w-0 gap-8 flex-1 overflow-y-scroll pt-4"
-    >
+    <div ref={messagesContainerRef} className="flex flex-col min-w-0 gap-8 flex-1 overflow-y-scroll pt-4">
       {isNewConversation && <Overview selectedModel={selectedModel} />}
 
       {messages.map((message, index) => (
@@ -51,20 +47,14 @@ function PureMessages({
           chatId={chatId}
           message={message}
           isLoading={status === 'streaming' && messages.length - 1 === index}
-          vote={
-            votes
-              ? votes.find((vote) => vote.messageId === message.id)
-              : undefined
-          }
+          vote={votes ? votes.find((vote) => vote.messageId === message.id) : undefined}
           editMessage={editMessage}
           selectSibling={changeBranch}
           isReadonly={isReadonly}
         />
       ))}
 
-      {status === 'submitted' &&
-        messages.length > 0 &&
-        messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
+      {status === 'submitted' && messages.length > 0 && messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
 
       <div
         ref={messagesEndRef}
@@ -82,8 +72,8 @@ export const Messages = memo(PureMessages, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;
   if (prevProps.status && nextProps.status) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;
-  const prevMessages = prevProps.messages
-  const nextMessages = nextProps.messages
+  const prevMessages = prevProps.messages;
+  const nextMessages = nextProps.messages;
   for (let i = 0; i < prevMessages.length; ++i) {
     if (prevMessages[i].id !== nextMessages[i].id || prevMessages[i].siblings?.length !== nextMessages[i].siblings?.length) {
       return false;

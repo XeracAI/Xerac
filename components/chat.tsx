@@ -17,11 +17,7 @@ import type { Vote, Chat as ChatSchema } from '@/lib/db/schema';
 import type { Model } from '@/lib/ai/types';
 import type { ImageData } from '@/lib/ai/providers';
 import { fetcher, getMessageIdFromAnnotations } from '@/lib/utils';
-import {
-  constructBranchAfterNode,
-  constructDefaultBranchFromAIMessages,
-  cutBranchUntilNode,
-} from '@/lib/tree';
+import { constructBranchAfterNode, constructDefaultBranchFromAIMessages, cutBranchUntilNode } from '@/lib/tree';
 
 import { useArtifact, useArtifactSelector } from '@/hooks/use-artifact';
 import { useChatHistoryCache } from '@/hooks/use-chat-history-cache';
@@ -49,13 +45,10 @@ export function Chat({
   const { updateChatInCache, getChatById } = useChatHistoryCache();
 
   const [allMessages, setAllMessages] = useState<UIMessage[]>(initialMessages);
-  const [isNewConversationState, setIsNewConversationState] =
-    useState<boolean>(isNewConversation);
+  const [isNewConversationState, setIsNewConversationState] = useState<boolean>(isNewConversation);
   const [messageEdited, setMessageEdited] = useState<boolean>(false);
 
-  const [currentChat, setCurrentChat] = useState<ChatSchema>(
-    getChatById(id) as ChatSchema,
-  );
+  const [currentChat, setCurrentChat] = useState<ChatSchema>(getChatById(id) as ChatSchema);
 
   const {
     messages,
@@ -120,19 +113,11 @@ export function Chat({
       throw Error('Invalid branch node!');
     }
 
-    setTimeout(
-      () =>
-        setMessages(
-          constructBranchAfterNode([...branch, sibling], allMessages),
-        ),
-      350,
-    );
+    setTimeout(() => setMessages(constructBranchAfterNode([...branch, sibling], allMessages)), 350);
   };
 
   const editMessage = (messageId: string, newContent: string) => {
-    const messageIndex = messages.findIndex(
-      (m) => messageId === (m.serverId ?? m.id),
-    );
+    const messageIndex = messages.findIndex((m) => messageId === (m.serverId ?? m.id));
     const message = messages[messageIndex];
     if (!message) {
       throw Error('Invalid message!');
@@ -155,13 +140,9 @@ export function Chat({
     setMessageEdited(true);
   };
 
-  const { width: windowWidth = 1920, height: windowHeight = 1080 } =
-    useWindowSize();
+  const { width: windowWidth = 1920, height: windowHeight = 1080 } = useWindowSize();
 
-  const handleSubmitWrapper = (
-    events?: { preventDefault?: () => void },
-    chatRequestOptions?: ChatRequestOptions,
-  ): void => {
+  const handleSubmitWrapper = (events?: { preventDefault?: () => void }, chatRequestOptions?: ChatRequestOptions): void => {
     setIsNewConversationState(false);
 
     if (!selectedChatModel) {
@@ -193,9 +174,7 @@ export function Chat({
           let documentId: string;
           let content: string;
           if (responseData.url) {
-            documentId = (responseData.url.split('/').pop() ?? '')
-              .split('?')[0]
-              .split('.')[0];
+            documentId = (responseData.url.split('/').pop() ?? '').split('?')[0].split('.')[0];
             content = `![alt](${responseData.url})`; // TODO replace alt with generated title after it was handled
             content = responseData.url; // TODO replace alt with generated title after it was handled
           } else {
@@ -230,14 +209,9 @@ export function Chat({
     const assistantMessageId = getMessageIdFromAnnotations(lastMessage);
     if (assistantMessageId) {
       lastMessage.serverId = assistantMessageId;
-      const lastUserMessageIndex = messages.findLastIndex(
-        (message) => message.role === 'user',
-      );
+      const lastUserMessageIndex = messages.findLastIndex((message) => message.role === 'user');
       const lastUserMessage = messages[lastUserMessageIndex];
-      if (
-        lastUserMessage.children &&
-        !lastUserMessage.children.some((s) => s === assistantMessageId)
-      ) {
+      if (lastUserMessage.children && !lastUserMessage.children.some((s) => s === assistantMessageId)) {
         lastUserMessage.children?.push(assistantMessageId);
       }
       // setMessages(messages.map((message, index) => index === lastUserMessageIndex ? lastUserMessage : message));
@@ -248,20 +222,14 @@ export function Chat({
     // @ts-expect-error type is not defined in MessageAnnotation
     switch (mostRecentDelta.type) {
       case 'user-message-id': {
-        const lastUserMessageIndex = messages.findLastIndex(
-          (message) => message.role === 'user',
-        );
+        const lastUserMessageIndex = messages.findLastIndex((message) => message.role === 'user');
         const lastUserMessage = messages[lastUserMessageIndex];
         // @ts-expect-error content is not defined in JSONValue
         lastUserMessage.serverId = mostRecentDelta.content;
         lastMessage.parent = lastUserMessage.serverId;
-        if (
-          lastUserMessage.siblings &&
-          !lastUserMessage.siblings.some((s) => s === lastUserMessage.serverId)
-        ) {
-          lastUserMessage.siblings[
-            lastUserMessage.siblings.findIndex((s) => s === lastUserMessage.id)
-          ] = lastUserMessage.serverId as string;
+        if (lastUserMessage.siblings && !lastUserMessage.siblings.some((s) => s === lastUserMessage.serverId)) {
+          lastUserMessage.siblings[lastUserMessage.siblings.findIndex((s) => s === lastUserMessage.id)] =
+            lastUserMessage.serverId as string;
         }
         setMessages(
           messages.map((message, index) =>
@@ -293,10 +261,7 @@ export function Chat({
     }
   }, [messages, messageEdited]);
 
-  const { data: votes } = useSWR<Vote[]>(
-    messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
-    fetcher,
-  );
+  const { data: votes } = useSWR<Vote[]>(messages.length >= 2 ? `/api/vote?chatId=${id}` : null, fetcher);
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);

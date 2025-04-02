@@ -13,12 +13,7 @@ import type { Vote } from '@/lib/db/schema';
 import { cn, checkEnglishString } from '@/lib/utils';
 
 import { DocumentToolCall, DocumentToolResult } from './document';
-import {
-  PencilEditIcon,
-  SparklesIcon,
-  LeftArrowIcon,
-  RightArrowIcon,
-} from './icons';
+import { PencilEditIcon, SparklesIcon, LeftArrowIcon, RightArrowIcon } from './icons';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -28,7 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { ModelContext } from "@/contexts/models";
+import { ModelContext } from '@/contexts/models';
 
 const PurePreviewMessage = ({
   chatId,
@@ -54,13 +49,13 @@ const PurePreviewMessage = ({
 
   let model = null;
   // @ts-expect-error modelId is not defined in MessageAnnotation
-  const modelId = message.annotations?.find((annotation) => annotation && annotation.modelId)?.modelId;
+  const modelId = message.annotations?.find((annotation) => annotation?.modelId)?.modelId;
   if (modelId) {
     model = chatModels.find((model) => model.id === modelId);
   }
 
-  const { siblings = [] } = message
-  const siblingIndex = siblings.indexOf(message.serverId ?? message.id)
+  const { siblings = [] } = message;
+  const siblingIndex = siblings.indexOf(message.serverId ?? message.id);
 
   return (
     <AnimatePresence>
@@ -73,40 +68,29 @@ const PurePreviewMessage = ({
         data-role={message.role}
       >
         <div
-          className={cn(
-            'flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
-            {
-              'w-full': mode === 'edit',
-              'group-data-[role=user]/message:w-fit': mode !== 'edit',
-            },
-          )}
+          className={cn('flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl', {
+            'w-full': mode === 'edit',
+            'group-data-[role=user]/message:w-fit': mode !== 'edit',
+          })}
         >
           {message.role === 'assistant' && (
             <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
-              {
-                model ? (
-                  <>
-                    <Image src={model.icon.light} alt={model.label} width={18} height={18} className="dark:hidden" />
-                    <Image src={model.icon.dark} alt={model.label} width={18} height={18} className="hidden dark:block" />
-                  </>
-                ) : (
-                  <SparklesIcon size={14} />
-                )
-              }
+              {model ? (
+                <>
+                  <Image src={model.icon.light} alt={model.label} width={18} height={18} className="dark:hidden" />
+                  <Image src={model.icon.dark} alt={model.label} width={18} height={18} className="hidden dark:block" />
+                </>
+              ) : (
+                <SparklesIcon size={14} />
+              )}
             </div>
           )}
 
           <div className="flex flex-col gap-4 w-full">
             {message.experimental_attachments && (
-              <div
-                data-testid="message-attachments"
-                className="flex flex-row justify-start gap-2"
-              >
+              <div data-testid="message-attachments" className="flex flex-row justify-start gap-2">
                 {message.experimental_attachments.map((attachment) => (
-                  <PreviewAttachment
-                    key={attachment.url}
-                    attachment={attachment}
-                  />
+                  <PreviewAttachment key={attachment.url} attachment={attachment} />
                 ))}
               </div>
             )}
@@ -116,27 +100,22 @@ const PurePreviewMessage = ({
               const key = `message-${message.id}-part-${index}`;
 
               if (type === 'reasoning') {
-                return (
-                  <MessageReasoning
-                    key={key}
-                    isLoading={isLoading}
-                    reasoning={part.reasoning}
-                  />
-                );
+                return <MessageReasoning key={key} isLoading={isLoading} reasoning={part.reasoning} />;
               }
 
               if (type === 'text') {
                 if (mode === 'view') {
                   return (
                     <React.Fragment key={key}>
-                      <div className="flex flex-row gap-2 items-start">
+                      <div className="flex flex-row gap-2 items-center">
                         <div
                           data-testid="message-content"
                           className={cn('flex flex-col gap-4', {
-                            'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
-                              message.role === 'user',
+                            'bg-primary text-primary-foreground px-3 py-2 rounded-xl': message.role === 'user',
                           })}
-                          style={{ direction: checkEnglishString(message.content) ? "ltr" : "rtl" }}
+                          style={{
+                            direction: checkEnglishString(message.content) ? 'ltr' : 'rtl',
+                          }}
                         >
                           <Markdown>{part.text}</Markdown>
                         </div>
@@ -161,7 +140,7 @@ const PurePreviewMessage = ({
                       </div>
 
                       {selectSibling !== undefined && siblings.length > 1 && (
-                        <div className='flex items-center'>
+                        <div className="flex items-center">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -176,7 +155,9 @@ const PurePreviewMessage = ({
                             <TooltipContent>پیام قبلی</TooltipContent>
                           </Tooltip>
 
-                          <div className="px-0.5 pt-0.5 text-xs">{siblingIndex + 1}/{siblings.length}</div>
+                          <div className="px-0.5 pt-0.5 text-xs">
+                            {siblingIndex + 1}/{siblings.length}
+                          </div>
 
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -202,12 +183,7 @@ const PurePreviewMessage = ({
                     <div key={key} className="flex flex-row gap-2 items-start">
                       <div className="size-8" />
 
-                      <MessageEditor
-                        key={message.id}
-                        message={message}
-                        setMode={setMode}
-                        editMessage={editMessage}
-                      />
+                      <MessageEditor key={message.id} message={message} setMode={setMode} editMessage={editMessage} />
                     </div>
                   );
                 }
@@ -232,17 +208,9 @@ const PurePreviewMessage = ({
                       ) : toolName === 'createDocument' ? (
                         <DocumentPreview isReadonly={isReadonly} args={args} />
                       ) : toolName === 'updateDocument' ? (
-                        <DocumentToolCall
-                          type="update"
-                          args={args}
-                          isReadonly={isReadonly}
-                        />
+                        <DocumentToolCall type="update" args={args} isReadonly={isReadonly} />
                       ) : toolName === 'requestSuggestions' ? (
-                        <DocumentToolCall
-                          type="request-suggestions"
-                          args={args}
-                          isReadonly={isReadonly}
-                        />
+                        <DocumentToolCall type="request-suggestions" args={args} isReadonly={isReadonly} />
                       ) : null}
                     </div>
                   );
@@ -256,22 +224,11 @@ const PurePreviewMessage = ({
                       {toolName === 'getWeather' ? (
                         <Weather weatherAtLocation={result} />
                       ) : toolName === 'createDocument' ? (
-                        <DocumentPreview
-                          isReadonly={isReadonly}
-                          result={result}
-                        />
+                        <DocumentPreview isReadonly={isReadonly} result={result} />
                       ) : toolName === 'updateDocument' ? (
-                        <DocumentToolResult
-                          type="update"
-                          result={result}
-                          isReadonly={isReadonly}
-                        />
+                        <DocumentToolResult type="update" result={result} isReadonly={isReadonly} />
                       ) : toolName === 'requestSuggestions' ? (
-                        <DocumentToolResult
-                          type="request-suggestions"
-                          result={result}
-                          isReadonly={isReadonly}
-                        />
+                        <DocumentToolResult type="request-suggestions" result={result} isReadonly={isReadonly} />
                       ) : (
                         <pre>{JSON.stringify(result, null, 2)}</pre>
                       )}
@@ -287,7 +244,7 @@ const PurePreviewMessage = ({
                 chatId={chatId}
                 message={message}
                 vote={vote}
-                model={model?.label || "Loading..."}
+                model={model?.label || 'Loading...'}
                 isLoading={isLoading}
               />
             )}
@@ -298,22 +255,19 @@ const PurePreviewMessage = ({
   );
 };
 
-export const PreviewMessage = memo(
-  PurePreviewMessage,
-  (prevProps, nextProps) => {
-    // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
-    return false;
-    if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (prevProps.message.id !== nextProps.message.id) return false;
-    if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
-    if (prevProps.message.content !== nextProps.message.content) return false;
+export const PreviewMessage = memo(PurePreviewMessage, (prevProps, nextProps) => {
+  // TODO had to temporarily disable memoization because branch (sibling) count is not updating due to some incorrect state and memoization handling
+  return false;
+  if (prevProps.isLoading !== nextProps.isLoading) return false;
+  if (prevProps.message.id !== nextProps.message.id) return false;
+  if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
+  if (prevProps.message.content !== nextProps.message.content) return false;
 
-    if (prevProps.message.siblings?.length !== nextProps.message.siblings?.length) return false;
-    if (!equal(prevProps.vote, nextProps.vote)) return false;
+  if (prevProps.message.siblings?.length !== nextProps.message.siblings?.length) return false;
+  if (!equal(prevProps.vote, nextProps.vote)) return false;
 
-    return true;
-  },
-);
+  return true;
+});
 
 export const ThinkingMessage = () => {
   const role = 'assistant';
@@ -339,9 +293,7 @@ export const ThinkingMessage = () => {
         </div>
 
         <div className="flex flex-col gap-2 w-full justify-center">
-          <div className="flex flex-col gap-4 text-muted-foreground">
-            در حال فکر کردن...
-          </div>
+          <div className="flex flex-col gap-4 text-muted-foreground">در حال فکر کردن...</div>
         </div>
       </div>
     </motion.div>
