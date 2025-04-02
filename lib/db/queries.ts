@@ -39,20 +39,12 @@ import type { ModelWithFeaturesAndTags, ModelGroupWithModelIDs } from './types';
 const client = postgres(process.env.POSTGRES_URL!, { max: 1 });
 const db = drizzle(client);
 
-export async function getUserWithAllFields(
-  phoneNumber: string,
-  countryCode: string,
-): Promise<UserWithAllFields | null> {
+export async function getUserWithAllFields(phoneNumber: string, countryCode: string): Promise<UserWithAllFields | null> {
   try {
     const users = await db
       .select()
       .from(user)
-      .where(
-        and(
-          eq(user.phoneNumber, phoneNumber),
-          eq(user.countryCode, countryCode),
-        ),
-      );
+      .where(and(eq(user.phoneNumber, phoneNumber), eq(user.countryCode, countryCode)));
     return users.length ? users[0] : null;
   } catch (error) {
     console.error('Failed to get user from database', error);
@@ -60,10 +52,7 @@ export async function getUserWithAllFields(
   }
 }
 
-export async function getUser(
-  phoneNumber: string,
-  countryCode: string,
-): Promise<User | null> {
+export async function getUser(phoneNumber: string, countryCode: string): Promise<User | null> {
   try {
     const users = await db
       .select({
@@ -95,12 +84,7 @@ export async function getUser(
         dateCreated: user.dateCreated,
       })
       .from(user)
-      .where(
-        and(
-          eq(user.phoneNumber, phoneNumber),
-          eq(user.countryCode, countryCode),
-        ),
-      );
+      .where(and(eq(user.phoneNumber, phoneNumber), eq(user.countryCode, countryCode)));
     return users.length ? users[0] : null;
   } catch (error) {
     console.error('Failed to get user from database', error);
@@ -108,14 +92,19 @@ export async function getUser(
   }
 }
 
-export async function getUserByReferralCode(
-  referralCode: string,
-): Promise<User | null> {
+export async function getUserBalance(userId: string): Promise<number | null> {
   try {
-    const users = await db
-      .select()
-      .from(user)
-      .where(eq(user.referralCode, referralCode));
+    const balance = await db.select({ balance: user.balance }).from(user).where(eq(user.id, userId));
+    return balance.length ? balance[0].balance : null;
+  } catch (error) {
+    console.error('Failed to get user balance from database', error);
+    throw error;
+  }
+}
+
+export async function getUserByReferralCode(referralCode: string): Promise<User | null> {
+  try {
+    const users = await db.select().from(user).where(eq(user.referralCode, referralCode));
     return users.length ? users[0] : null;
   } catch (error) {
     console.error('Failed to get user from database', error);
@@ -162,47 +151,27 @@ export async function createUser({
   }
 }
 
-export async function updateUserOTP(
-  userId: string,
-  otp: string,
-  otpExpires: Date,
-) {
+export async function updateUserOTP(userId: string, otp: string, otpExpires: Date) {
   try {
-    return await db
-      .update(user)
-      .set({ otp, otpExpires, lastSMSSent: new Date() })
-      .where(eq(user.id, userId));
+    return await db.update(user).set({ otp, otpExpires, lastSMSSent: new Date() }).where(eq(user.id, userId));
   } catch (error) {
     console.error('Failed to update user OTP in database');
     throw error;
   }
 }
 
-export async function updateUserFailedTries(
-  userId: string,
-  failedTries: number,
-  lockedUntil?: Date,
-) {
+export async function updateUserFailedTries(userId: string, failedTries: number, lockedUntil?: Date) {
   try {
-    return await db
-      .update(user)
-      .set({ failedTries, lockedUntil })
-      .where(eq(user.id, userId));
+    return await db.update(user).set({ failedTries, lockedUntil }).where(eq(user.id, userId));
   } catch (error) {
     console.error("Failed to update user's failed tries in database");
     throw error;
   }
 }
 
-export async function updateUserVerification(
-  userId: string,
-  isVerified: boolean,
-) {
+export async function updateUserVerification(userId: string, isVerified: boolean) {
   try {
-    return await db
-      .update(user)
-      .set({ isPhoneNumberVerified: isVerified })
-      .where(eq(user.id, userId));
+    return await db.update(user).set({ isPhoneNumberVerified: isVerified }).where(eq(user.id, userId));
   } catch (error) {
     console.error('Failed to update user verification status in database');
     throw error;
@@ -214,38 +183,23 @@ export async function updateUserPassword(userId: string, password: string) {
     const salt = genSaltSync(10);
     const hash = hashSync(password, salt);
 
-    return await db
-      .update(user)
-      .set({ password: hash })
-      .where(eq(user.id, userId));
+    return await db.update(user).set({ password: hash }).where(eq(user.id, userId));
   } catch (error) {
     console.error('Failed to update user password in database');
     throw error;
   }
 }
 
-export async function updateUserInfo(
-  userId: string,
-  firstName: string,
-  lastName: string,
-  referrer?: string,
-) {
+export async function updateUserInfo(userId: string, firstName: string, lastName: string, referrer?: string) {
   try {
-    return await db
-      .update(user)
-      .set({ firstName, lastName, referrer })
-      .where(eq(user.id, userId));
+    return await db.update(user).set({ firstName, lastName, referrer }).where(eq(user.id, userId));
   } catch (error) {
     console.error('Failed to update user info in database');
     throw error;
   }
 }
 
-export async function saveChat({
-  id,
-  userId,
-  title,
-}: { id: string; userId: string; title: string }) {
+export async function saveChat({ id, userId, title }: { id: string; userId: string; title: string }) {
   try {
     return await db.insert(chat).values({
       id,
@@ -259,10 +213,7 @@ export async function saveChat({
   }
 }
 
-export async function updateChatById({
-  id,
-  title,
-}: { id: string; title: string }) {
+export async function updateChatById({ id, title }: { id: string; title: string }) {
   try {
     return await db.update(chat).set({ title }).where(eq(chat.id, id));
   } catch (error) {
@@ -283,11 +234,7 @@ export async function deleteChatById({ id }: { id: string }) {
   }
 }
 
-export async function getChatsByUserId({
-  id,
-  cursor,
-  limit,
-}: { id: string; cursor?: Date; limit: number }) {
+export async function getChatsByUserId({ id, cursor, limit }: { id: string; cursor?: Date; limit: number }) {
   try {
     const query = cursor
       ? db
@@ -296,12 +243,7 @@ export async function getChatsByUserId({
           .where(and(eq(chat.userId, id), lt(chat.createdAt, cursor)))
           .orderBy(desc(chat.createdAt))
           .limit(limit)
-      : db
-          .select()
-          .from(chat)
-          .where(eq(chat.userId, id))
-          .orderBy(desc(chat.createdAt))
-          .limit(limit);
+      : db.select().from(chat).where(eq(chat.userId, id)).orderBy(desc(chat.createdAt)).limit(limit);
 
     return await query;
   } catch (error) {
@@ -320,9 +262,7 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function getMessagesByChatId({
-  id,
-}: { id: string }): Promise<Array<FlattenMaps<IMessage>>> {
+export async function getMessagesByChatId({ id }: { id: string }): Promise<Array<FlattenMaps<IMessage>>> {
   try {
     await dbConnect();
     return await Message.find({ chatId: id })
@@ -336,9 +276,7 @@ export async function getMessagesByChatId({
   }
 }
 
-export async function saveMessages({
-  messages,
-}: { messages: Array<IMessageInsert> }) {
+export async function saveMessages({ messages }: { messages: Array<IMessageInsert> }) {
   try {
     await dbConnect();
     return await Message.insertMany(messages);
@@ -348,10 +286,7 @@ export async function saveMessages({
   }
 }
 
-export async function updateMessage(
-  messageId: string,
-  message: Partial<IMessageInsert>,
-) {
+export async function updateMessage(messageId: string, message: Partial<IMessageInsert>) {
   try {
     await dbConnect();
     return await Message.updateOne({ _id: messageId }, message).exec();
@@ -361,27 +296,17 @@ export async function updateMessage(
   }
 }
 
-export async function addChildToMessage(
-  messageId: mongoose.Types.ObjectId,
-  childId: mongoose.Types.ObjectId,
-) {
+export async function addChildToMessage(messageId: mongoose.Types.ObjectId, childId: mongoose.Types.ObjectId) {
   try {
     await dbConnect();
-    return await Message.updateOne(
-      { _id: messageId },
-      { $push: { children: childId } },
-    ).exec();
+    return await Message.updateOne({ _id: messageId }, { $push: { children: childId } }).exec();
   } catch (error) {
     console.error('Failed to update message in database', error);
     throw error;
   }
 }
 
-export async function voteMessage({
-  chatId,
-  messageId,
-  type,
-}: { chatId: string; messageId: string; type: 'up' | 'down' }) {
+export async function voteMessage({ chatId, messageId, type }: { chatId: string; messageId: string; type: 'up' | 'down' }) {
   try {
     const [existingVote] = await db
       .select()
@@ -444,11 +369,7 @@ export async function saveDocument({
 
 export async function getDocumentsById({ id }: { id: string }) {
   try {
-    return await db
-      .select()
-      .from(document)
-      .where(eq(document.id, id))
-      .orderBy(asc(document.createdAt));
+    return await db.select().from(document).where(eq(document.id, id)).orderBy(asc(document.createdAt));
   } catch (error) {
     console.error('Failed to get document by id from database');
     throw error;
@@ -457,11 +378,7 @@ export async function getDocumentsById({ id }: { id: string }) {
 
 export async function getDocumentById({ id }: { id: string }) {
   try {
-    const [selectedDocument] = await db
-      .select()
-      .from(document)
-      .where(eq(document.id, id))
-      .orderBy(desc(document.createdAt));
+    const [selectedDocument] = await db.select().from(document).where(eq(document.id, id)).orderBy(desc(document.createdAt));
 
     return selectedDocument;
   } catch (error) {
@@ -470,34 +387,18 @@ export async function getDocumentById({ id }: { id: string }) {
   }
 }
 
-export async function deleteDocumentsByIdAfterTimestamp({
-  id,
-  timestamp,
-}: { id: string; timestamp: Date }) {
+export async function deleteDocumentsByIdAfterTimestamp({ id, timestamp }: { id: string; timestamp: Date }) {
   try {
-    await db
-      .delete(suggestion)
-      .where(
-        and(
-          eq(suggestion.documentId, id),
-          gt(suggestion.documentCreatedAt, timestamp),
-        ),
-      );
+    await db.delete(suggestion).where(and(eq(suggestion.documentId, id), gt(suggestion.documentCreatedAt, timestamp)));
 
-    return await db
-      .delete(document)
-      .where(and(eq(document.id, id), gt(document.createdAt, timestamp)));
+    return await db.delete(document).where(and(eq(document.id, id), gt(document.createdAt, timestamp)));
   } catch (error) {
-    console.error(
-      'Failed to delete documents by id after timestamp from database',
-    );
+    console.error('Failed to delete documents by id after timestamp from database');
     throw error;
   }
 }
 
-export async function saveSuggestions({
-  suggestions,
-}: { suggestions: Array<SuggestionInsert> }) {
+export async function saveSuggestions({ suggestions }: { suggestions: Array<SuggestionInsert> }) {
   try {
     return await db.insert(suggestion).values(suggestions);
   } catch (error) {
@@ -506,18 +407,14 @@ export async function saveSuggestions({
   }
 }
 
-export async function getSuggestionsByDocumentId({
-  documentId,
-}: { documentId: string }) {
+export async function getSuggestionsByDocumentId({ documentId }: { documentId: string }) {
   try {
     return await db
       .select()
       .from(suggestion)
       .where(and(eq(suggestion.documentId, documentId)));
   } catch (error) {
-    console.error(
-      'Failed to get suggestions by document version from database',
-    );
+    console.error('Failed to get suggestions by document version from database');
     throw error;
   }
 }
@@ -525,20 +422,14 @@ export async function getSuggestionsByDocumentId({
 export async function getMessageById({ id }: { id: string }) {
   try {
     await dbConnect();
-    return await Message.findById(id)
-      .select('-__v')
-      .lean<FlattenMaps<IMessage>>()
-      .exec();
+    return await Message.findById(id).select('-__v').lean<FlattenMaps<IMessage>>().exec();
   } catch (error) {
     console.error('Failed to get message by id from database');
     throw error;
   }
 }
 
-export async function deleteMessagesByChatIdAfterTimestamp({
-  chatId,
-  timestamp,
-}: { chatId: string; timestamp: Date }) {
+export async function deleteMessagesByChatIdAfterTimestamp({ chatId, timestamp }: { chatId: string; timestamp: Date }) {
   try {
     await dbConnect();
     return await Message.deleteMany({
@@ -546,17 +437,12 @@ export async function deleteMessagesByChatIdAfterTimestamp({
       createdAt: { $gte: timestamp },
     }).exec();
   } catch (error) {
-    console.error(
-      'Failed to delete messages by id after timestamp from database',
-    );
+    console.error('Failed to delete messages by id after timestamp from database');
     throw error;
   }
 }
 
-export async function updateChatVisiblityById({
-  chatId,
-  visibility,
-}: { chatId: string; visibility: 'private' | 'public' }) {
+export async function updateChatVisiblityById({ chatId, visibility }: { chatId: string; visibility: 'private' | 'public' }) {
   try {
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
   } catch (error) {
@@ -577,10 +463,7 @@ export async function getModels(): Promise<Model[]> {
 
 export async function getModelById(id: string): Promise<Model | undefined> {
   try {
-    const [selectedModel] = await db
-      .select()
-      .from(model)
-      .where(eq(model.id, id));
+    const [selectedModel] = await db.select().from(model).where(eq(model.id, id));
     return selectedModel;
   } catch (error) {
     console.error('Failed to get model by id from database', error);
@@ -640,9 +523,7 @@ export async function getModelTags(modelId: string): Promise<Tag[]> {
   }
 }
 
-export async function getModelsWithFeaturesAndTags(): Promise<
-  ModelWithFeaturesAndTags[]
-> {
+export async function getModelsWithFeaturesAndTags(): Promise<ModelWithFeaturesAndTags[]> {
   try {
     const models = await getModels();
     return await Promise.all(
@@ -657,10 +538,7 @@ export async function getModelsWithFeaturesAndTags(): Promise<
       }),
     );
   } catch (error) {
-    console.error(
-      'Failed to get models with features and tags from database',
-      error,
-    );
+    console.error('Failed to get models with features and tags from database', error);
     throw error;
   }
 }
@@ -670,9 +548,7 @@ export async function getModelsWithFeaturesAndTags(): Promise<
  * @param userId The user's ID
  * @returns Array of model groups with their models' IDs
  */
-export async function getUserModelGroups(
-  userId: string,
-): Promise<ModelGroupWithModelIDs[]> {
+export async function getUserModelGroups(userId: string): Promise<ModelGroupWithModelIDs[]> {
   try {
     // Get all model groups with their models in a single query
     const results = await db
@@ -683,10 +559,7 @@ export async function getUserModelGroups(
         modelId: modelGroupModel.modelId,
       })
       .from(modelGroup)
-      .leftJoin(
-        modelGroupModel,
-        eq(modelGroup.id, modelGroupModel.modelGroupId),
-      )
+      .leftJoin(modelGroupModel, eq(modelGroup.id, modelGroupModel.modelGroupId))
       .where(eq(modelGroup.userId, userId))
       .orderBy(asc(modelGroup.order));
 
@@ -744,10 +617,7 @@ export async function hasBalance(userId: string): Promise<boolean> {
  * @param amount The amount to deduct (must be positive)
  * @returns Whether the deduction was successful
  */
-export async function deductBalance(
-  userId: string,
-  amount: number,
-): Promise<boolean> {
+export async function deductBalance(userId: string, amount: number): Promise<boolean> {
   if (amount <= 0) {
     throw new Error('Amount to deduct must be positive');
   }
@@ -758,11 +628,7 @@ export async function deductBalance(
 
     try {
       // Check if user exists using Drizzle ORM
-      const users = await db
-        .select({ id: user.id })
-        .from(user)
-        .where(eq(user.id, userId))
-        .for('update'); // FOR UPDATE lock
+      const users = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update'); // FOR UPDATE lock
 
       if (users.length === 0) {
         // User not found
@@ -793,9 +659,7 @@ export async function deductBalance(
   }
 }
 
-export async function count<T extends TableConfig>(
-  table: PgTableWithColumns<T>,
-) {
+export async function count<T extends TableConfig>(table: PgTableWithColumns<T>) {
   try {
     return await db.$count(table);
   } catch (error) {

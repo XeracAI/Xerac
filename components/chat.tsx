@@ -26,6 +26,7 @@ import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import type { VisibilityType } from './visibility-selector';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export function Chat({
   id,
@@ -104,6 +105,7 @@ export function Chat({
     },
   });
   const { setArtifact } = useArtifact();
+  const { updateBalance } = useSidebar();
 
   const changeBranch = (nodeId: string, siblingId: string) => {
     const branch = cutBranchUntilNode(nodeId, messages);
@@ -205,8 +207,9 @@ export function Chat({
   };
 
   useEffect(() => {
-    const lastMessage = messages.at(-1);
-    if (!lastMessage || lastMessage.role !== 'assistant') return;
+    if (messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role !== 'assistant') return;
     const assistantMessageId = getMessageIdFromAnnotations(lastMessage);
     if (assistantMessageId) {
       lastMessage.serverId = assistantMessageId;
@@ -215,7 +218,6 @@ export function Chat({
       if (lastUserMessage.children && !lastUserMessage.children.some((s) => s === assistantMessageId)) {
         lastUserMessage.children?.push(assistantMessageId);
       }
-      // setMessages(messages.map((message, index) => index === lastUserMessageIndex ? lastUserMessage : message));
     }
 
     const mostRecentDelta = streamingData?.at(-1);
@@ -251,6 +253,17 @@ export function Chat({
         const title = mostRecentDelta.content;
         setCurrentChat({ ...currentChat, title });
         updateChatInCache(id, { title });
+        break;
+      }
+      case 'message-cost': {
+        if (!lastMessage.cost) {
+          // @ts-expect-error content is not defined in JSONValue
+          const totalCost = mostRecentDelta.content;
+          // FIXME this is called multiple times and I don't know why
+          updateBalance(-totalCost);
+          setMessages([...messages.slice(0, messages.length - 1), { ...lastMessage, cost: totalCost }]);
+        }
+        break;
       }
     }
   }, [streamingData]);

@@ -1,7 +1,9 @@
 'use client';
 
-import type { User } from 'next-auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+import type { User } from 'next-auth';
 
 import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
@@ -18,7 +20,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { BetterTooltip } from '@/components/ui/tooltip';
-import Link from 'next/link';
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
@@ -36,9 +37,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               }}
               className="flex flex-row gap-3 items-center"
             >
-              <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                زیرک
-              </span>
+              <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">زیرک</span>
             </Link>
 
             <BetterTooltip content="چت جدید" align="start">

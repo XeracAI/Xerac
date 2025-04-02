@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { ChevronUp } from 'lucide-react';
 import Image from 'next/image';
 import type { User } from 'next-auth';
@@ -13,14 +15,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 
 export function SidebarUserNav({ user }: { user: User }) {
   const { setTheme, theme } = useTheme();
+  const { balance } = useSidebar();
 
   const handleSignOut = async () => {
     if (user?.id) {
@@ -42,32 +41,30 @@ export function SidebarUserNav({ user }: { user: User }) {
                 height={24}
                 className="rounded-full"
               />
-              <span className="truncate">
-                {`خوش اومدی ${user?.firstName}!` ||
-                  user?.email ||
-                  `0${user?.phoneNumber}`}
-              </span>
+              <span className="truncate">{`خوش اومدی ${user?.firstName}!` || user?.email || `0${user?.phoneNumber}`}</span>
               <ChevronUp className="mr-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent
-            side="top"
-            className="w-[--radix-popper-anchor-width]"
-          >
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onSelect={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            >
+          <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">
+            <DropdownMenuItem asChild>
+              {/* TODO link to billing page */}
+              <Link
+                href="/chat"
+                className="w-full cursor-pointer flex flex-col bg-gradient-to-bl from-[hsl(var(--accent))] to-[hsl(var(--background))] mb-1"
+              >
+                <div className="text-xs w-full text-start">اعتبار شما:</div>
+                <div className="text-xl font-bold pt-2 pb-5" style={{ direction: 'ltr' }}>
+                  {balance}
+                </div>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer" onSelect={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               {`تغییر حالت ${theme === 'light' ? 'تاریک' : 'روشن'}`}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <button
-                type="button"
-                className="w-full cursor-pointer"
-                onClick={handleSignOut}
-              >
+              <button type="button" className="w-full cursor-pointer" onClick={handleSignOut}>
                 خروج
               </button>
             </DropdownMenuItem>

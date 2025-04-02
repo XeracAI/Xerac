@@ -51,7 +51,7 @@ export const {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user && user.id) {
+      if (user?.id) {
         token.id = user.id;
         token.phoneNumber = user.phoneNumber;
         token.countryCode = user.countryCode;

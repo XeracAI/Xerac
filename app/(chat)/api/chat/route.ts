@@ -38,10 +38,7 @@ import {
 } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 import { calculateCost, extractUsage } from '@/lib/ai/usage';
-import {
-  constructBranchFromDBMessages,
-  constructBranchUntilDBMessage,
-} from '@/lib/tree';
+import { constructBranchFromDBMessages, constructBranchUntilDBMessage } from '@/lib/tree';
 import { isProductionEnvironment } from '@/lib/constants';
 import { getAIModelById } from '@/lib/cache';
 
@@ -58,20 +55,11 @@ interface POSTRouteBody {
 
 export const maxDuration = 60;
 
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type AllowedTools =
-  | 'createDocument'
-  | 'updateDocument'
-  | 'requestSuggestions'
-  | 'getWeather';
+type AllowedTools = 'createDocument' | 'updateDocument' | 'requestSuggestions' | 'getWeather';
 
-const blocksTools: AllowedTools[] = [
-  'createDocument',
-  'updateDocument',
-  'requestSuggestions',
-];
+const blocksTools: AllowedTools[] = ['createDocument', 'updateDocument', 'requestSuggestions'];
 
 const weatherTools: AllowedTools[] = ['getWeather'];
 
@@ -113,14 +101,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const {
-      id,
-      content,
-      attachments,
-      modelId,
-      siblingId,
-      parentId,
-    }: POSTRouteBody = await request.json();
+    const { id, content, attachments, modelId, siblingId, parentId }: POSTRouteBody = await request.json();
 
     const session = await auth();
 
@@ -149,10 +130,7 @@ export async function POST(request: Request) {
     }
 
     if (!session.user.isAdmin && !(await hasBalance(userId))) {
-      return new Response(
-        'Insufficient balance! Please add credits to continue',
-        { status: 402 },
-      );
+      return new Response('Insufficient balance! Please add credits to continue', { status: 402 });
     }
 
     const userMessage = {
@@ -160,9 +138,7 @@ export async function POST(request: Request) {
       content,
       experimental_attachments: attachments,
     } as Message;
-    const userCoreMessage = convertToCoreMessages([userMessage]).at(
-      -1,
-    ) as CoreUserMessage;
+    const userCoreMessage = convertToCoreMessages([userMessage]).at(-1) as CoreUserMessage;
 
     const chat = await getChatById({ id });
 
@@ -194,16 +170,10 @@ export async function POST(request: Request) {
 
           const branch = constructBranchUntilDBMessage(leaf, dbMessages);
           parent = leaf.parent;
-          messages = [
-            ...convertToCoreMessages(convertToUIMessages(branch)),
-            userCoreMessage,
-          ];
+          messages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
         } else {
           if (parentId === undefined) {
-            return new Response(
-              'Must provide a valid parent message ID for non-empty chats!',
-              { status: 400 },
-            );
+            return new Response('Must provide a valid parent message ID for non-empty chats!', { status: 400 });
           } else if (!mongoose.isValidObjectId(parentId)) {
             return new Response('Invalid parent message ID!', { status: 400 });
           }
@@ -214,10 +184,7 @@ export async function POST(request: Request) {
           }
 
           const branch = constructBranchFromDBMessages(parent, dbMessages);
-          messages = [
-            ...convertToCoreMessages(convertToUIMessages(branch)),
-            userCoreMessage,
-          ];
+          messages = [...convertToCoreMessages(convertToUIMessages(branch)), userCoreMessage];
           parent = parent._id;
         }
 
@@ -301,9 +268,7 @@ export async function POST(request: Request) {
             },
             onFinish: async ({ response, usage, providerMetadata }) => {
               try {
-                const assistantMessages = response.messages.filter(
-                  (message) => message.role === 'assistant',
-                );
+                const assistantMessages = response.messages.filter((message) => message.role === 'assistant');
 
                 if (assistantMessages.length === 0) {
                   throw new Error('No assistant message found!');
@@ -315,15 +280,16 @@ export async function POST(request: Request) {
                 });
 
                 // Usage extraction
-                const usageObject = extractUsage(
-                  usage,
-                  providerMetadata,
-                  model,
-                );
+                const usageObject = extractUsage(usage, providerMetadata, model);
 
                 // Cost calculation
                 usageObject.totalCost = calculateCost(usageObject, model);
                 usageObject.otherCosts = otherCosts;
+
+                dataStream.writeData({
+                  type: 'message-cost',
+                  content: usageObject.totalCost,
+                });
 
                 await deductBalance(userId, usageObject.totalCost);
 
@@ -335,8 +301,7 @@ export async function POST(request: Request) {
                       chatId: id,
                       role: 'assistant',
                       parts: assistantMessage.parts,
-                      attachments:
-                        assistantMessage.experimental_attachments ?? [],
+                      attachments: assistantMessage.experimental_attachments ?? [],
 
                       modelId,
 
@@ -408,12 +373,9 @@ export async function PATCH(request: Request) {
 
     return new Response('Chat updated', { status: 200 });
   } catch (error) {
-    return new Response(
-      `An error occurred while processing your request: ${error}`,
-      {
-        status: 500,
-      },
-    );
+    return new Response(`An error occurred while processing your request: ${error}`, {
+      status: 500,
+    });
   }
 }
 
@@ -442,11 +404,8 @@ export async function DELETE(request: Request) {
 
     return new Response('Chat deleted', { status: 200 });
   } catch (error) {
-    return new Response(
-      `An error occurred while processing your request: ${error}`,
-      {
-        status: 500,
-      },
-    );
+    return new Response(`An error occurred while processing your request: ${error}`, {
+      status: 500,
+    });
   }
 }
